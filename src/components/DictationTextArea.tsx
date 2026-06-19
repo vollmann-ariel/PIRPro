@@ -6,12 +6,13 @@ import { capitalizeFirst } from '../utils/text';
 import { useVoiceDictation } from '../voice/voice-dictation';
 
 type Props = {
+  label: string;
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
 };
 
-export function DescriptionField({ value, onChangeText, placeholder }: Props) {
+export function DictationTextArea({ label, value, onChangeText, placeholder }: Props) {
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -23,10 +24,10 @@ export function DescriptionField({ value, onChangeText, placeholder }: Props) {
   return (
     <View style={styles.field}>
       <View style={styles.header}>
-        <Text style={styles.label}>Descripción</Text>
+        <Text style={styles.label}>{label}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Dictar descripción por voz"
+          accessibilityLabel={`Dictar ${label.toLowerCase()} por voz`}
           disabled={!isAvailable}
           onPress={isListening ? stop : start}
           style={[styles.micButton, !isAvailable && styles.micButtonDisabled, isListening && styles.micButtonActive]}
@@ -41,6 +42,7 @@ export function DescriptionField({ value, onChangeText, placeholder }: Props) {
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
+        placeholderTextColor={colors.textSecondary}
       />
     </View>
   );
@@ -69,6 +71,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     minHeight: 96,
     textAlignVertical: 'top',
+    color: colors.textPrimary,
     ...typography.body,
   },
 });

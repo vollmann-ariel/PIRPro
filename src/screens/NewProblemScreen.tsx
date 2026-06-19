@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DescriptionField } from '../components/DescriptionField';
+import { DictationTextArea } from '../components/DictationTextArea';
+import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PirCheckbox } from '../components/PirCheckbox';
 import { PlantOriginToggle } from '../components/PlantOriginToggle';
@@ -13,6 +14,7 @@ import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { PlantOrigin, Severity } from '../types/report';
+import { parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -22,7 +24,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewProblem'>;
 
 export function NewProblemScreen({ route, navigation }: Props) {
   const { inspectionId } = route.params;
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState('');
+  const [observations, setObservations] = useState('');
+  const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
@@ -46,17 +50,19 @@ export function NewProblemScreen({ route, navigation }: Props) {
   }
 
   async function handleSave() {
-    if (!severity || !plantOrigin || photoUris.length < MIN_PHOTOS) {
-      Alert.alert('Faltan datos', `Elegí severidad, planta de origen, y al menos ${MIN_PHOTOS} fotos.`);
+    if (!title.trim() || !severity || !plantOrigin || photoUris.length < MIN_PHOTOS) {
+      Alert.alert('Faltan datos', `Elegí un título, severidad, planta de origen, y al menos ${MIN_PHOTOS} fotos.`);
       return;
     }
     setIsSaving(true);
     try {
       const report = createReport({
         inspectionId,
-        description,
+        title: title.trim(),
+        observations,
         severity,
         plantOrigin,
+        hours: parseHours(hoursText),
         latitude: coordinates?.latitude ?? null,
         longitude: coordinates?.longitude ?? null,
         isPir,
@@ -78,7 +84,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
 
       <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
 
-      <DescriptionField value={description} onChangeText={setDescription} placeholder="Describí el problema encontrado" />
+      <LabeledTextInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
 
       <View style={styles.field}>
         <SeveritySelector value={severity} onChange={setSeverity} />
@@ -87,6 +93,10 @@ export function NewProblemScreen({ route, navigation }: Props) {
       <View style={styles.field}>
         <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
       </View>
+
+      <LabeledTextInput label="Horas" value={hoursText} onChangeText={setHoursText} placeholder="0" keyboardType="decimal-pad" />
+
+      <DictationTextArea label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" />
 
       <Pressable style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} disabled={isSaving} onPress={handleSave}>
         <Text style={styles.saveButtonText}>{isSaving ? 'Guardando…' : 'Guardar problema'}</Text>

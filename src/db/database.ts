@@ -20,10 +20,12 @@ export function getDatabase(): SQLiteDatabase {
       CREATE TABLE IF NOT EXISTS reports (
         id TEXT PRIMARY KEY NOT NULL,
         inspection_id TEXT NOT NULL REFERENCES inspections(id),
-        description TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        observations TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
         severity INTEGER NOT NULL CHECK (severity IN (3,6,20,50)),
         plant_origin TEXT NOT NULL CHECK (plant_origin IN ('BR','AR')),
+        hours REAL,
         latitude REAL,
         longitude REAL,
         photo_count INTEGER NOT NULL DEFAULT 0,
@@ -51,8 +53,22 @@ export function getDatabase(): SQLiteDatabase {
 
 function runMigrations(database: SQLiteDatabase): void {
   const columns = database.getAllSync<{ name: string }>('PRAGMA table_info(reports)');
-  const hasPirColumn = columns.some((column) => column.name === 'is_pir');
-  if (!hasPirColumn) {
+  const columnNames = new Set(columns.map((column) => column.name));
+
+  if (!columnNames.has('is_pir')) {
     database.execSync('ALTER TABLE reports ADD COLUMN is_pir INTEGER NOT NULL DEFAULT 0;');
+  }
+  if (!columnNames.has('title')) {
+    database.execSync("ALTER TABLE reports ADD COLUMN title TEXT NOT NULL DEFAULT '';");
+  }
+  if (!columnNames.has('hours')) {
+    database.execSync('ALTER TABLE reports ADD COLUMN hours REAL;');
+  }
+  if (!columnNames.has('observations')) {
+    if (columnNames.has('description')) {
+      database.execSync('ALTER TABLE reports RENAME COLUMN description TO observations;');
+    } else {
+      database.execSync("ALTER TABLE reports ADD COLUMN observations TEXT NOT NULL DEFAULT '';");
+    }
   }
 }

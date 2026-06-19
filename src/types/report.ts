@@ -9,10 +9,12 @@ export type SyncStatus = 'local_only' | 'uploaded' | 'needs_reupload';
 export type Report = {
   id: string;
   inspectionId: string;
-  description: string;
+  title: string;
+  observations: string;
   createdAt: string;
   severity: Severity;
   plantOrigin: PlantOrigin;
+  hours: number | null;
   latitude: number | null;
   longitude: number | null;
   photoCount: number;

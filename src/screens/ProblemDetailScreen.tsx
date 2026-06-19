@@ -3,7 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DescriptionField } from '../components/DescriptionField';
+import { DictationTextArea } from '../components/DictationTextArea';
+import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PirCheckbox } from '../components/PirCheckbox';
 import { PlantOriginToggle } from '../components/PlantOriginToggle';
@@ -23,6 +24,7 @@ import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { PlantOrigin, Report, ReportPhoto, Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
+import { formatHours, parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
@@ -35,7 +37,9 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [report, setReport] = useState<Report | null>(null);
   const [photos, setPhotos] = useState<ReportPhoto[]>([]);
   const [isEditing, setIsEditing] = useState(false);
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState('');
+  const [observations, setObservations] = useState('');
+  const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
 
@@ -44,7 +48,9 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     setReport(current);
     setPhotos(listPhotosByReport(reportId));
     if (current) {
-      setDescription(current.description);
+      setTitle(current.title);
+      setObservations(current.observations);
+      setHoursText(formatHours(current.hours));
       setSeverity(current.severity);
       setPlantOrigin(current.plantOrigin);
     }
@@ -57,8 +63,8 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   function handleSaveEdit() {
-    if (!severity || !plantOrigin) return;
-    updateReport(reportId, { description, severity, plantOrigin });
+    if (!title.trim() || !severity || !plantOrigin) return;
+    updateReport(reportId, { title: title.trim(), observations, severity, plantOrigin, hours: parseHours(hoursText) });
     setIsEditing(false);
     refresh();
   }
@@ -113,9 +119,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         <>
           <PirCheckbox value={report.isPir} onToggle={handleTogglePir} />
 
-          <DescriptionField value={description} onChangeText={setDescription} />
+          <LabeledTextInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
           <SeveritySelector value={severity} onChange={setSeverity} />
           <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
+          <LabeledTextInput label="Horas" value={hoursText} onChangeText={setHoursText} placeholder="0" keyboardType="decimal-pad" />
+          <DictationTextArea label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" />
           <View style={styles.actionRow}>
             <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(false)}>
               <Text style={styles.secondaryButtonText}>Cancelar</Text>
@@ -128,8 +136,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
       ) : (
         <>
           {report.isPir && <Text style={styles.pirBadge}>PIR</Text>}
-          <Text style={styles.description}>{report.description || '(sin descripción)'}</Text>
-          <Text style={styles.meta}>Severidad {report.severity} · Planta {report.plantOrigin}</Text>
+          <Text style={styles.title}>{report.title || '(sin título)'}</Text>
+          <Text style={styles.meta}>
+            Severidad {report.severity} · Planta {report.plantOrigin}
+            {report.hours != null ? ` · ${report.hours} h` : ''}
+          </Text>
           <Text style={styles.meta}>{new Date(report.createdAt).toLocaleString()}</Text>
           {report.latitude != null && report.longitude != null && (
             <Text style={styles.meta}>
@@ -153,7 +164,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md },
-  description: { ...typography.body, color: colors.textPrimary },
+  title: { ...typography.title, color: colors.textPrimary },
   meta: { ...typography.caption, color: colors.textSecondary },
   pirBadge: {
     ...typography.label,

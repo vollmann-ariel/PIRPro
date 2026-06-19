@@ -88,8 +88,8 @@ export function ProblemListScreen({ route, navigation }: Props) {
               <Text style={styles.severityBadgeText}>{item.severity}</Text>
             </View>
             <View style={styles.reportInfo}>
-              <Text style={styles.reportDescription} numberOfLines={2}>
-                {item.description || '(sin descripción)'}
+              <Text style={styles.reportTitle} numberOfLines={2}>
+                {item.title || '(sin título)'}
               </Text>
               <Text style={styles.reportMeta}>
                 {item.plantOrigin} · {new Date(item.createdAt).toLocaleString()} · {item.photoCount} fotos
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   severityBadgeText: { color: colors.textInverse, fontWeight: '700' },
   reportInfo: { flex: 1 },
-  reportDescription: { ...typography.body, color: colors.textPrimary },
+  reportTitle: { ...typography.body, color: colors.textPrimary },
   reportMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   deleteButton: {
     width: 36,

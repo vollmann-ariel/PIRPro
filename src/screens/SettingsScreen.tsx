@@ -40,6 +40,7 @@ export function SettingsScreen() {
           persist({ userName: text });
         }}
         placeholder="Tu nombre"
+        placeholderTextColor={colors.textSecondary}
       />
 
       <Text style={styles.label}>Calidad de fotos</Text>
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    color: colors.textPrimary,
     ...typography.body,
   },
   row: { flexDirection: 'row', gap: spacing.sm },

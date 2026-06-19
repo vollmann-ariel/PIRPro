@@ -145,6 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+    color: colors.textPrimary,
     ...typography.body,
     marginBottom: spacing.md,
   },

@@ -7,10 +7,12 @@ import type { PlantOrigin, Report, ReportPhoto, Severity, SyncStatus } from '../
 type ReportRow = {
   id: string;
   inspection_id: string;
-  description: string;
+  title: string;
+  observations: string;
   created_at: string;
   severity: Severity;
   plant_origin: PlantOrigin;
+  hours: number | null;
   latitude: number | null;
   longitude: number | null;
   photo_count: number;
@@ -32,10 +34,12 @@ function toReport(row: ReportRow): Report {
   return {
     id: row.id,
     inspectionId: row.inspection_id,
-    description: row.description,
+    title: row.title,
+    observations: row.observations,
     createdAt: row.created_at,
     severity: row.severity,
     plantOrigin: row.plant_origin,
+    hours: row.hours,
     latitude: row.latitude,
     longitude: row.longitude,
     photoCount: row.photo_count,
@@ -79,9 +83,11 @@ export function listPhotosByReport(reportId: string): ReportPhoto[] {
 
 export type NewReportInput = {
   inspectionId: string;
-  description: string;
+  title: string;
+  observations: string;
   severity: Severity;
   plantOrigin: PlantOrigin;
+  hours: number | null;
   latitude: number | null;
   longitude: number | null;
   isPir?: boolean;
@@ -91,10 +97,12 @@ export function createReport(input: NewReportInput): Report {
   const report: Report = {
     id: createId(),
     inspectionId: input.inspectionId,
-    description: input.description,
+    title: input.title,
+    observations: input.observations,
     createdAt: new Date().toISOString(),
     severity: input.severity,
     plantOrigin: input.plantOrigin,
+    hours: input.hours,
     latitude: input.latitude,
     longitude: input.longitude,
     photoCount: 0,
@@ -102,14 +110,16 @@ export function createReport(input: NewReportInput): Report {
     isPir: input.isPir ?? false,
   };
   getDatabase().runSync(
-    `INSERT INTO reports (id, inspection_id, description, created_at, severity, plant_origin, latitude, longitude, photo_count, sync_status, is_pir)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO reports (id, inspection_id, title, observations, created_at, severity, plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     report.id,
     report.inspectionId,
-    report.description,
+    report.title,
+    report.observations,
     report.createdAt,
     report.severity,
     report.plantOrigin,
+    report.hours,
     report.latitude,
     report.longitude,
     report.photoCount,
@@ -121,9 +131,11 @@ export function createReport(input: NewReportInput): Report {
 }
 
 export type ReportEditInput = {
-  description: string;
+  title: string;
+  observations: string;
   severity: Severity;
   plantOrigin: PlantOrigin;
+  hours: number | null;
 };
 
 export function updateReport(id: string, patch: ReportEditInput): void {
@@ -131,10 +143,12 @@ export function updateReport(id: string, patch: ReportEditInput): void {
   if (!existing) return;
   const nextSyncStatus: SyncStatus = existing.syncStatus === 'local_only' ? 'local_only' : 'needs_reupload';
   getDatabase().runSync(
-    'UPDATE reports SET description = ?, severity = ?, plant_origin = ?, sync_status = ? WHERE id = ?',
-    patch.description,
+    'UPDATE reports SET title = ?, observations = ?, severity = ?, plant_origin = ?, hours = ?, sync_status = ? WHERE id = ?',
+    patch.title,
+    patch.observations,
     patch.severity,
     patch.plantOrigin,
+    patch.hours,
     nextSyncStatus,
     id
   );

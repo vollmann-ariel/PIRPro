@@ -6,13 +6,15 @@ const BASE_COLUMNS = [
   'vin',
   'report_id',
   'created_at',
-  'description',
+  'title',
   'severity',
   'plant_origin',
+  'hours',
   'is_pir',
   'latitude',
   'longitude',
   'photo_count',
+  'observations',
 ];
 
 function escapeCsvValue(value: string | number | null): string {
@@ -40,13 +42,15 @@ export function buildInspectionCsv(
       inspection.vin,
       report.id,
       report.createdAt,
-      report.description,
+      report.title,
       report.severity,
       report.plantOrigin,
+      report.hours,
       report.isPir ? 'true' : 'false',
       report.latitude,
       report.longitude,
       report.photoCount,
+      report.observations,
       ...photoPaths,
     ];
     return values.map(escapeCsvValue).join(',');

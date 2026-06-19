@@ -26,15 +26,16 @@ export function AppNavigator() {
     <NavigationContainer>
       <Stack.Navigator
         screenOptions={{
-          headerStyle: { backgroundColor: colors.surface },
+          headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,
+          headerShadowVisible: false,
         }}
       >
         <Stack.Screen
           name="InspectionPicker"
           component={InspectionPickerScreen}
           options={({ navigation }) => ({
-            title: 'PIRPro',
+            title: 'Inspecciones',
             headerRight: () => (
               <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Settings')}>
                 <Text style={{ color: colors.primary }}>Ajustes</Text>
