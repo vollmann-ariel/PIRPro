@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DictationTextArea } from '../components/DictationTextArea';
+import { DictationInput } from '../components/DictationInput';
+import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PirCheckbox } from '../components/PirCheckbox';
@@ -79,12 +80,12 @@ export function NewProblemScreen({ route, navigation }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingScreen style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid photos={photoUris.map((uri) => ({ uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
 
       <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
 
-      <LabeledTextInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
+      <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
 
       <View style={styles.field}>
         <SeveritySelector value={severity} onChange={setSeverity} />
@@ -96,12 +97,12 @@ export function NewProblemScreen({ route, navigation }: Props) {
 
       <LabeledTextInput label="Horas" value={hoursText} onChangeText={setHoursText} placeholder="0" keyboardType="decimal-pad" />
 
-      <DictationTextArea label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" />
+      <DictationInput label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" multiline />
 
       <Pressable style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} disabled={isSaving} onPress={handleSave}>
         <Text style={styles.saveButtonText}>{isSaving ? 'Guardando…' : 'Guardar problema'}</Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAvoidingScreen>
   );
 }
 

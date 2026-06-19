@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DictationTextArea } from '../components/DictationTextArea';
+import { DictationInput } from '../components/DictationInput';
+import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PirCheckbox } from '../components/PirCheckbox';
@@ -106,7 +107,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingScreen style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid
         photos={photos.map((photo) => ({ uri: photo.localUri }))}
         minRequired={MIN_PHOTOS}
@@ -119,11 +120,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         <>
           <PirCheckbox value={report.isPir} onToggle={handleTogglePir} />
 
-          <LabeledTextInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
+          <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
           <SeveritySelector value={severity} onChange={setSeverity} />
           <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
           <LabeledTextInput label="Horas" value={hoursText} onChangeText={setHoursText} placeholder="0" keyboardType="decimal-pad" />
-          <DictationTextArea label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" />
+          <DictationInput label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" multiline />
           <View style={styles.actionRow}>
             <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(false)}>
               <Text style={styles.secondaryButtonText}>Cancelar</Text>
@@ -137,6 +138,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         <>
           {report.isPir && <Text style={styles.pirBadge}>PIR</Text>}
           <Text style={styles.title}>{report.title || '(sin título)'}</Text>
+          {report.observations ? <Text style={styles.observations}>{report.observations}</Text> : null}
           <Text style={styles.meta}>
             Severidad {report.severity} · Planta {report.plantOrigin}
             {report.hours != null ? ` · ${report.hours} h` : ''}
@@ -157,7 +159,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
           </View>
         </>
       )}
-    </ScrollView>
+    </KeyboardAvoidingScreen>
   );
 }
 
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md },
   title: { ...typography.title, color: colors.textPrimary },
+  observations: { ...typography.body, color: colors.textSecondary },
   meta: { ...typography.caption, color: colors.textSecondary },
   pirBadge: {
     ...typography.label,

@@ -10,9 +10,11 @@ type Props = {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
+  multiline?: boolean;
+  maxLength?: number;
 };
 
-export function DictationTextArea({ label, value, onChangeText, placeholder }: Props) {
+export function DictationInput({ label, value, onChangeText, placeholder, multiline = false, maxLength }: Props) {
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -27,22 +29,25 @@ export function DictationTextArea({ label, value, onChangeText, placeholder }: P
         <Text style={styles.label}>{label}</Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Dictar ${label.toLowerCase()} por voz`}
+          accessibilityLabel={isListening ? `Detener dictado de ${label.toLowerCase()}` : `Dictar ${label.toLowerCase()} por voz`}
           disabled={!isAvailable}
           onPress={isListening ? stop : start}
           style={[styles.micButton, !isAvailable && styles.micButtonDisabled, isListening && styles.micButtonActive]}
         >
-          <Text style={styles.micButtonText}>{isListening ? '● Grabando' : '🎤'}</Text>
+          <Text style={[styles.micButtonText, isListening && styles.micButtonTextActive]}>
+            {isListening ? '⏹ Detener' : '🎤 Dictar'}
+          </Text>
         </Pressable>
       </View>
       <TextInput
-        style={styles.textArea}
-        multiline
-        numberOfLines={4}
+        style={[styles.input, multiline && styles.inputMultiline]}
+        multiline={multiline}
+        numberOfLines={multiline ? 4 : 1}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={colors.textSecondary}
+        maxLength={maxLength}
       />
     </View>
   );
@@ -53,25 +58,29 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   label: { ...typography.label, color: colors.textSecondary },
   micButton: {
-    width: 36,
-    height: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
     borderRadius: radius.pill,
     backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   micButtonDisabled: { opacity: 0.4 },
-  micButtonActive: { backgroundColor: colors.dangerMuted },
-  micButtonText: { fontSize: 14 },
-  textArea: {
+  micButtonActive: { backgroundColor: colors.danger },
+  micButtonText: { ...typography.label, color: colors.textPrimary },
+  micButtonTextActive: { color: colors.textInverse },
+  input: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.md,
-    padding: spacing.md,
-    minHeight: 96,
-    textAlignVertical: 'top',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     color: colors.textPrimary,
     ...typography.body,
+  },
+  inputMultiline: {
+    minHeight: 96,
+    textAlignVertical: 'top',
   },
 });
