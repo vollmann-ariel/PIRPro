@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "name": "PIRPro",
+    "slug": "pirpro",
+    "scheme": "pirpro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Permitir que PIRPro reconozca tu voz para dictar descripciones.",
+        "NSMicrophoneUsageDescription": "Permitir que PIRPro use el micrófono para dictado por voz."
+      }
+    },
+    "android": {
+      "package": "com.pirpro.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-sharing",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Permitir que PIRPro use el micrófono para dictado por voz.",
+          "speechRecognitionPermission": "Permitir que PIRPro reconozca tu voz para dictar descripciones."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que PIRPro acceda a tus fotos para adjuntarlas a un problema.",
+          "cameraPermission": "Permitir que PIRPro use la cámara para fotografiar problemas."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Permitir que PIRPro acceda a tu ubicación para registrar dónde se encontró el problema."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "1adb13b5-8dad-450a-9129-bcdb9cb5ed33"
+      }
+    },
+    "owner": "vollmann.ariel"
+  }
+}
