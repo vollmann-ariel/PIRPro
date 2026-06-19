@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { DescriptionField } from '../components/DescriptionField';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
+import { PirCheckbox } from '../components/PirCheckbox';
 import { PlantOriginToggle } from '../components/PlantOriginToggle';
 import { SeveritySelector } from '../components/SeveritySelector';
 import { addPhotoToReport, createReport } from '../db/reports-repository';
@@ -26,6 +27,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
   const [photoUris, setPhotoUris] = useState<string[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
+  const [isPir, setIsPir] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
         plantOrigin,
         latitude: coordinates?.latitude ?? null,
         longitude: coordinates?.longitude ?? null,
+        isPir,
       });
       const settings = loadSettings();
       for (let index = 0; index < photoUris.length; index += 1) {
@@ -72,6 +75,8 @@ export function NewProblemScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid photos={photoUris.map((uri) => ({ uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
+
+      <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
 
       <DescriptionField value={description} onChangeText={setDescription} placeholder="Describí el problema encontrado" />
 

@@ -5,6 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { DescriptionField } from '../components/DescriptionField';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
+import { PirCheckbox } from '../components/PirCheckbox';
 import { PlantOriginToggle } from '../components/PlantOriginToggle';
 import { SeveritySelector } from '../components/SeveritySelector';
 import {
@@ -110,12 +111,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
 
       {isEditing ? (
         <>
-          <Pressable style={styles.pirRow} accessibilityRole="checkbox" accessibilityState={{ checked: report.isPir }} onPress={handleTogglePir}>
-            <View style={[styles.checkbox, report.isPir && styles.checkboxChecked]}>
-              {report.isPir && <Text style={styles.checkboxMark}>✓</Text>}
-            </View>
-            <Text style={styles.pirLabel}>Marcar como PIR (Product Incident Report)</Text>
-          </Pressable>
+          <PirCheckbox value={report.isPir} onToggle={handleTogglePir} />
 
           <DescriptionField value={description} onChangeText={setDescription} />
           <SeveritySelector value={severity} onChange={setSeverity} />
@@ -168,19 +164,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.sm,
   },
-  pirRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: { backgroundColor: colors.primary, borderColor: colors.primary },
-  checkboxMark: { color: colors.textInverse, fontSize: 14, lineHeight: 14 },
-  pirLabel: { ...typography.body, color: colors.textPrimary },
   actionRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   primaryButton: { flex: 1, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center' },
   primaryButtonText: { ...typography.subtitle, color: colors.textInverse },

@@ -84,6 +84,7 @@ export type NewReportInput = {
   plantOrigin: PlantOrigin;
   latitude: number | null;
   longitude: number | null;
+  isPir?: boolean;
 };
 
 export function createReport(input: NewReportInput): Report {
@@ -98,11 +99,11 @@ export function createReport(input: NewReportInput): Report {
     longitude: input.longitude,
     photoCount: 0,
     syncStatus: 'local_only',
-    isPir: false,
+    isPir: input.isPir ?? false,
   };
   getDatabase().runSync(
     `INSERT INTO reports (id, inspection_id, description, created_at, severity, plant_origin, latitude, longitude, photo_count, sync_status, is_pir)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     report.id,
     report.inspectionId,
     report.description,
@@ -112,7 +113,8 @@ export function createReport(input: NewReportInput): Report {
     report.latitude,
     report.longitude,
     report.photoCount,
-    report.syncStatus
+    report.syncStatus,
+    report.isPir ? 1 : 0
   );
   touchInspection(report.inspectionId);
   return report;
