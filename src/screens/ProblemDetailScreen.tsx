@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -104,6 +104,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     });
   }
 
+  function handleOpenMap() {
+    if (report?.latitude == null || report.longitude == null) return;
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${report.latitude},${report.longitude}`);
+  }
+
   function handleDelete() {
     confirmDestructive('Eliminar observación', 'Esta acción no se puede deshacer.', 'Eliminar', () => {
       deleteReportCompletely(reportId);
@@ -164,9 +169,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
           </Text>
           <Text style={styles.meta}>{new Date(report.createdAt).toLocaleString()}</Text>
           {report.latitude != null && report.longitude != null && (
-            <Text style={styles.meta}>
-              GPS: {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
-            </Text>
+            <Pressable accessibilityRole="link" accessibilityLabel="Abrir ubicación en el mapa" onPress={handleOpenMap}>
+              <Text style={styles.gpsLink}>
+                GPS: {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
+              </Text>
+            </Pressable>
           )}
           <View style={styles.actionRow}>
             <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(true)}>
@@ -188,6 +195,7 @@ const styles = StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary },
   observations: { ...typography.body, color: colors.textSecondary },
   meta: { ...typography.caption, color: colors.textSecondary },
+  gpsLink: { ...typography.caption, color: colors.primary, textDecorationLine: 'underline' },
   pirBadge: {
     ...typography.label,
     color: colors.danger,

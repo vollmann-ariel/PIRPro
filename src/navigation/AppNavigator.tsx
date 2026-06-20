@@ -35,7 +35,13 @@ export function AppNavigator() {
               <BrandMark />
               <View style={styles.divider} />
               {navigation.canGoBack() && (
-                <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={navigation.goBack} style={styles.backButton}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Volver"
+                  onPress={navigation.goBack}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={styles.backButton}
+                >
                   <View style={styles.backArrow} />
                 </Pressable>
               )}
@@ -66,8 +72,8 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginRight: spacing.sm },
-  backButton: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginRight: spacing.xs },
+  backButton: { width: 18, height: 28, alignItems: 'center', justifyContent: 'center' },
   backArrow: {
     width: 9,
     height: 9,
@@ -75,7 +81,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2.5,
     borderColor: colors.textPrimary,
     transform: [{ rotate: '45deg' }],
-    marginLeft: 4,
+    marginLeft: 2,
   },
   divider: { width: 1, height: LOGO_HEIGHT * 0.8, backgroundColor: colors.textSecondary, marginLeft: spacing.xs },
 });
