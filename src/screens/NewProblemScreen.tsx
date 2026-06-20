@@ -104,13 +104,13 @@ export function NewProblemScreen({ route, navigation }: Props) {
         onClose={() => setIsCameraOpen(false)}
       />
 
-      <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
-
       <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve de la observación" maxLength={80} />
 
       <View style={styles.field}>
         <SeveritySelector value={severity} onChange={setSeverity} />
       </View>
+
+      <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
 
       <View style={styles.field}>
         <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />

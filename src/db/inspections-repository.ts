@@ -110,3 +110,7 @@ export function touchInspection(id: string): void {
 export function deleteInspectionRow(id: string): void {
   getDatabase().runSync('DELETE FROM inspections WHERE id = ?', id);
 }
+
+export function updateInspectionVin(id: string, vin: string): void {
+  getDatabase().runSync('UPDATE inspections SET vin = ? WHERE id = ?', vin.trim(), id);
+}

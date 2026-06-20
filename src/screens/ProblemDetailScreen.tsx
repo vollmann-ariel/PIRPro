@@ -136,6 +136,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         photos={photos.map((photo) => ({ uri: photo.localUri }))}
         minRequired={MIN_PHOTOS}
         editable={isEditing}
+        showCounter={false}
         onAddPress={handleAddPhoto}
         onRemove={handleRemovePhoto}
       />
@@ -187,11 +188,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
             Severidad {report.severity} · Planta {report.plantOrigin}
             {report.hours != null ? ` · ${report.hours} h` : ''}
           </Text>
-          <Text style={styles.meta}>{new Date(report.createdAt).toLocaleString()}</Text>
+          <Text style={styles.meta}>📅 {new Date(report.createdAt).toLocaleString()}</Text>
           {report.latitude != null && report.longitude != null && (
             <Pressable accessibilityRole="link" accessibilityLabel="Abrir ubicación en el mapa" onPress={handleOpenMap}>
               <Text style={styles.gpsLink}>
-                GPS: {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
+                🛰️ GPS: {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
               </Text>
             </Pressable>
           )}

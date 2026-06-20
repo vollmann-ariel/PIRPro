@@ -8,18 +8,21 @@ type Props = {
   photos: Photo[];
   minRequired: number;
   editable?: boolean;
+  showCounter?: boolean;
   onAddPress?: () => void;
   onRemove?: (index: number) => void;
 };
 
-export function PhotoCaptureGrid({ photos, minRequired, editable = true, onAddPress, onRemove }: Props) {
+export function PhotoCaptureGrid({ photos, minRequired, editable = true, showCounter = true, onAddPress, onRemove }: Props) {
   return (
     <View>
       <View style={styles.headerRow}>
         <Text style={styles.label}>Fotos</Text>
-        <Text style={styles.counter}>
-          {photos.length} / {minRequired} mínimo
-        </Text>
+        {showCounter && (
+          <Text style={styles.counter}>
+            {photos.length} / {minRequired} mínimo
+          </Text>
+        )}
       </View>
       <View style={styles.grid}>
         {photos.map((photo, index) => (

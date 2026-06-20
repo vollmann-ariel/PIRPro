@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { deleteInspectionRow, getInspectionById } from '../db/inspections-repository';
+import { getInspectionById } from '../db/inspections-repository';
 import { deleteReportCompletely, listReportsByInspection } from '../db/reports-repository';
 import { colors, elevation, radius, spacing, typography } from '../theme/tokens';
 import type { Inspection } from '../types/inspection';
@@ -39,19 +39,11 @@ export function ProblemListScreen({ route, navigation }: Props) {
     });
   }
 
-  function handleDeleteInspection() {
-    confirmDestructive(
-      'Eliminar reporte completo',
-      `Se van a borrar las ${reports.length} observaciones registradas para este VIN. Esta acción no se puede deshacer. No se borra nada en OneDrive.`,
-      'Eliminar todo',
-      () => {
-        for (const report of reports) {
-          deleteReportCompletely(report.id);
-        }
-        deleteInspectionRow(inspectionId);
-        navigation.goBack();
-      }
-    );
+  function handleRowLongPress(report: Report) {
+    Alert.alert(report.title || '(sin título)', undefined, [
+      { text: 'Eliminar', style: 'destructive', onPress: () => handleDelete(report) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
   }
 
   return (
@@ -60,19 +52,6 @@ export function ProblemListScreen({ route, navigation }: Props) {
         <View style={styles.titleBlock}>
           <Text style={styles.tipoLabel}>{inspection?.tipoPrueba}</Text>
           <Text style={styles.title}>{inspection?.vin}</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <Pressable style={styles.headerButton} onPress={() => navigation.navigate('Export', { inspectionId })}>
-            <Text style={styles.headerButtonText}>Exportar</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Eliminar reporte completo"
-            style={styles.deleteButton}
-            onPress={handleDeleteInspection}
-          >
-            <Text style={styles.deleteButtonText}>🗑</Text>
-          </Pressable>
         </View>
       </View>
 
@@ -84,6 +63,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
           <Pressable
             style={styles.reportItem}
             onPress={() => navigation.navigate('ProblemDetail', { reportId: item.id })}
+            onLongPress={() => handleRowLongPress(item)}
           >
             <View style={[styles.severityBadge, { backgroundColor: SEVERITY_COLORS[item.severity] }]}>
               <Text style={styles.severityBadgeText}>{item.severity}</Text>
@@ -97,14 +77,6 @@ export function ProblemListScreen({ route, navigation }: Props) {
                 {item.isPir ? ' · PIR' : ''}
               </Text>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Eliminar observación"
-              style={styles.deleteButton}
-              onPress={() => handleDelete(item)}
-            >
-              <Text style={styles.deleteButtonText}>🗑</Text>
-            </Pressable>
           </Pressable>
         )}
         ListEmptyComponent={<Text style={styles.emptyText}>Todavía no hay observaciones registradas.</Text>}
@@ -133,15 +105,7 @@ const styles = StyleSheet.create({
   titleBlock: { flexShrink: 1, marginRight: spacing.sm },
   tipoLabel: { ...typography.label, color: colors.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
   title: { ...typography.title, color: colors.textPrimary, fontSize: 18 },
-  headerActions: { flexDirection: 'row', gap: spacing.sm },
-  headerButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primaryMuted,
-  },
-  headerButtonText: { ...typography.label, color: colors.primary },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
+  list: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.xxl, gap: spacing.sm },
   reportItem: {
     flexDirection: 'row',
     gap: spacing.md,
@@ -162,15 +126,6 @@ const styles = StyleSheet.create({
   reportInfo: { flex: 1 },
   reportTitle: { ...typography.body, color: colors.textPrimary },
   reportMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.dangerMuted,
-  },
-  deleteButtonText: { fontSize: 16 },
   emptyText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xxl },
   fab: {
     position: 'absolute',

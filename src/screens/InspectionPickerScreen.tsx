@@ -3,9 +3,18 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { createInspection, findSimilarInspection, listInspectionsByTipoPrueba, searchInspectionsByVin } from '../db/inspections-repository';
+import {
+  createInspection,
+  deleteInspectionRow,
+  findSimilarInspection,
+  listInspectionsByTipoPrueba,
+  searchInspectionsByVin,
+  updateInspectionVin,
+} from '../db/inspections-repository';
+import { deleteReportCompletely, listReportsByInspection } from '../db/reports-repository';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { TIPOS_PRUEBA, type Inspection, type TipoPrueba } from '../types/inspection';
+import { confirmDestructive } from '../utils/confirm';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'InspectionPicker'>;
@@ -14,12 +23,14 @@ export function InspectionPickerScreen({ navigation }: Props) {
   const [tipoPrueba, setTipoPrueba] = useState<TipoPrueba | null>(null);
   const [query, setQuery] = useState('');
   const [inspections, setInspections] = useState<Inspection[]>([]);
+  const [editingInspectionId, setEditingInspectionId] = useState<string | null>(null);
+  const [editingVinText, setEditingVinText] = useState('');
 
-  useFocusEffect(
-    useCallback(() => {
-      setInspections(tipoPrueba ? listInspectionsByTipoPrueba(tipoPrueba) : []);
-    }, [tipoPrueba])
-  );
+  const refresh = useCallback(() => {
+    setInspections(tipoPrueba ? listInspectionsByTipoPrueba(tipoPrueba) : []);
+  }, [tipoPrueba]);
+
+  useFocusEffect(refresh);
 
   const filtered = useMemo(() => {
     if (!tipoPrueba) return inspections;
@@ -28,6 +39,51 @@ export function InspectionPickerScreen({ navigation }: Props) {
 
   function openInspection(inspection: Inspection) {
     navigation.navigate('ProblemList', { inspectionId: inspection.id });
+  }
+
+  function handleVinLongPress(inspection: Inspection) {
+    Alert.alert(inspection.vin, undefined, [
+      { text: 'Exportar', onPress: () => navigation.navigate('Export', { inspectionId: inspection.id }) },
+      {
+        text: 'Editar VIN',
+        onPress: () => {
+          setEditingInspectionId(inspection.id);
+          setEditingVinText(inspection.vin);
+        },
+      },
+      { text: 'Eliminar', style: 'destructive', onPress: () => handleDeleteInspection(inspection) },
+      { text: 'Cancelar', style: 'cancel' },
+    ]);
+  }
+
+  function handleSaveVinEdit() {
+    if (!editingInspectionId) return;
+    const trimmed = editingVinText.trim();
+    if (trimmed) {
+      updateInspectionVin(editingInspectionId, trimmed);
+    }
+    setEditingInspectionId(null);
+    refresh();
+  }
+
+  function handleCancelVinEdit() {
+    setEditingInspectionId(null);
+  }
+
+  function handleDeleteInspection(inspection: Inspection) {
+    const reports = listReportsByInspection(inspection.id);
+    confirmDestructive(
+      'Eliminar reporte completo',
+      `Se van a borrar las ${reports.length} observaciones registradas para este VIN. Esta acción no se puede deshacer. No se borra nada en OneDrive.`,
+      'Eliminar todo',
+      () => {
+        for (const report of reports) {
+          deleteReportCompletely(report.id);
+        }
+        deleteInspectionRow(inspection.id);
+        refresh();
+      }
+    );
   }
 
   function handleCreate() {
@@ -96,12 +152,33 @@ export function InspectionPickerScreen({ navigation }: Props) {
             data={filtered}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <Pressable style={styles.resultItem} onPress={() => openInspection(item)}>
-                <Text style={styles.resultVin}>{item.vin}</Text>
-                <Text style={styles.resultMeta}>Actualizado {new Date(item.lastActivityAt).toLocaleDateString()}</Text>
-              </Pressable>
-            )}
+            renderItem={({ item }) =>
+              item.id === editingInspectionId ? (
+                <View style={styles.resultItem}>
+                  <View style={styles.editVinRow}>
+                    <TextInput
+                      style={styles.editVinInput}
+                      value={editingVinText}
+                      onChangeText={setEditingVinText}
+                      autoCapitalize="characters"
+                      autoFocus
+                      onSubmitEditing={handleSaveVinEdit}
+                    />
+                    <Pressable accessibilityRole="button" accessibilityLabel="Guardar VIN" style={styles.editVinButton} onPress={handleSaveVinEdit}>
+                      <Text style={styles.editVinButtonText}>✓</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Cancelar edición" style={styles.editVinButton} onPress={handleCancelVinEdit}>
+                      <Text style={styles.editVinButtonText}>✕</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable style={styles.resultItem} onPress={() => openInspection(item)} onLongPress={() => handleVinLongPress(item)}>
+                  <Text style={styles.resultVin}>{item.vin}</Text>
+                  <Text style={styles.resultMeta}>Actualizado {new Date(item.lastActivityAt).toLocaleDateString()}</Text>
+                </Pressable>
+              )
+            }
             ListFooterComponent={
               query.trim().length > 0 ? (
                 <Pressable style={styles.createItem} onPress={handleCreate}>
@@ -162,6 +239,27 @@ const styles = StyleSheet.create({
   },
   resultVin: { ...typography.subtitle, color: colors.textPrimary },
   resultMeta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
+  editVinRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  editVinInput: {
+    flex: 1,
+    backgroundColor: colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    color: colors.textPrimary,
+    ...typography.subtitle,
+  },
+  editVinButton: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editVinButtonText: { fontSize: 16, color: colors.textPrimary },
   createItem: {
     marginTop: spacing.sm,
     padding: spacing.md,
