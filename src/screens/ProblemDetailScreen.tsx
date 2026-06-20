@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -43,6 +43,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  function scrollToEnd() {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+  }
 
   const refresh = useCallback(() => {
     const current = getReportById(reportId);
@@ -93,21 +98,21 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   function handleRemovePhoto(index: number) {
     const photo = photos[index];
     if (!photo) return;
-    confirmDestructive('Quitar foto', '¿Seguro que querés quitar esta foto del problema?', 'Quitar', () => {
+    confirmDestructive('Quitar foto', '¿Seguro que querés quitar esta foto de la observación?', 'Quitar', () => {
       removePhotoFromReport(photo);
       refresh();
     });
   }
 
   function handleDelete() {
-    confirmDestructive('Eliminar problema', 'Esta acción no se puede deshacer.', 'Eliminar', () => {
+    confirmDestructive('Eliminar observación', 'Esta acción no se puede deshacer.', 'Eliminar', () => {
       deleteReportCompletely(reportId);
       navigation.goBack();
     });
   }
 
   return (
-    <KeyboardAvoidingScreen style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid
         photos={photos.map((photo) => ({ uri: photo.localUri }))}
         minRequired={MIN_PHOTOS}
@@ -120,11 +125,25 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         <>
           <PirCheckbox value={report.isPir} onToggle={handleTogglePir} />
 
-          <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
+          <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve de la observación" maxLength={80} />
           <SeveritySelector value={severity} onChange={setSeverity} />
           <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
-          <LabeledTextInput label="Horas" value={hoursText} onChangeText={setHoursText} placeholder="0" keyboardType="decimal-pad" />
-          <DictationInput label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" multiline />
+          <LabeledTextInput
+            label="Horas"
+            value={hoursText}
+            onChangeText={setHoursText}
+            placeholder="0"
+            keyboardType="decimal-pad"
+            onFocus={scrollToEnd}
+          />
+          <DictationInput
+            label="Modo de Falla"
+            value={observations}
+            onChangeText={setObservations}
+            placeholder="Modo de falla y notas adicionales"
+            multiline
+            onFocus={scrollToEnd}
+          />
           <View style={styles.actionRow}>
             <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(false)}>
               <Text style={styles.secondaryButtonText}>Cancelar</Text>

@@ -43,12 +43,12 @@ export function InspectionPickerScreen({ navigation }: Props) {
     const similar = findSimilarInspection(tipoPrueba, vin);
     if (similar) {
       Alert.alert(
-        'Inspección parecida encontrada',
-        `Ya existe una inspección ${similar.tipoPrueba} con VIN "${similar.vin}". ¿Es la misma?`,
+        'Reporte parecido encontrado',
+        `Ya existe un reporte ${similar.tipoPrueba} con VIN "${similar.vin}". ¿Es el mismo?`,
         [
-          { text: 'Usar esa', onPress: () => openInspection(similar) },
+          { text: 'Usar ese', onPress: () => openInspection(similar) },
           {
-            text: 'Crear nueva',
+            text: 'Crear nuevo',
             style: 'destructive',
             onPress: () => openInspection(createInspection(tipoPrueba, vin)),
           },
@@ -105,13 +105,13 @@ export function InspectionPickerScreen({ navigation }: Props) {
                 {similarSuggestion && (
                   <Pressable style={styles.suggestionBanner} onPress={() => openInspection(similarSuggestion)}>
                     <Text style={styles.suggestionBannerText}>
-                      ⚠ ¿Quisiste decir "{similarSuggestion.vin}"? Ya existe una inspección {similarSuggestion.tipoPrueba} con ese VIN. Tocá para usarla.
+                      ⚠ ¿Quisiste decir "{similarSuggestion.vin}"? Ya existe un reporte {similarSuggestion.tipoPrueba} con ese VIN. Tocá para usarlo.
                     </Text>
                   </Pressable>
                 )}
                 {query.trim().length > 0 && (
                   <Pressable style={styles.createItem} onPress={handleCreate}>
-                    <Text style={styles.createItemText}>+ Crear nueva inspección con VIN: {query.trim()}</Text>
+                    <Text style={styles.createItemText}>+ Crear nuevo reporte con VIN: {query.trim()}</Text>
                   </Pressable>
                 )}
               </>

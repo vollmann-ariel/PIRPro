@@ -33,7 +33,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
   useFocusEffect(refresh);
 
   function handleDelete(report: Report) {
-    confirmDestructive('Eliminar problema', 'Esta acción no se puede deshacer. No se borra nada en OneDrive.', 'Eliminar', () => {
+    confirmDestructive('Eliminar observación', 'Esta acción no se puede deshacer. No se borra nada en OneDrive.', 'Eliminar', () => {
       deleteReportCompletely(report.id);
       refresh();
     });
@@ -41,8 +41,8 @@ export function ProblemListScreen({ route, navigation }: Props) {
 
   function handleDeleteInspection() {
     confirmDestructive(
-      'Eliminar inspección completa',
-      `Se van a borrar los ${reports.length} problemas registrados para este VIN. Esta acción no se puede deshacer. No se borra nada en OneDrive.`,
+      'Eliminar reporte completo',
+      `Se van a borrar las ${reports.length} observaciones registradas para este VIN. Esta acción no se puede deshacer. No se borra nada en OneDrive.`,
       'Eliminar todo',
       () => {
         for (const report of reports) {
@@ -57,16 +57,17 @@ export function ProblemListScreen({ route, navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {inspection?.tipoPrueba} — {inspection?.vin}
-        </Text>
+        <View style={styles.titleBlock}>
+          <Text style={styles.tipoLabel}>{inspection?.tipoPrueba}</Text>
+          <Text style={styles.title}>{inspection?.vin}</Text>
+        </View>
         <View style={styles.headerActions}>
           <Pressable style={styles.headerButton} onPress={() => navigation.navigate('Export', { inspectionId })}>
             <Text style={styles.headerButtonText}>Exportar</Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Eliminar inspección completa"
+            accessibilityLabel="Eliminar reporte completo"
             style={styles.deleteButton}
             onPress={handleDeleteInspection}
           >
@@ -98,7 +99,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
             </View>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Eliminar problema"
+              accessibilityLabel="Eliminar observación"
               style={styles.deleteButton}
               onPress={() => handleDelete(item)}
             >
@@ -106,13 +107,13 @@ export function ProblemListScreen({ route, navigation }: Props) {
             </Pressable>
           </Pressable>
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>Todavía no hay problemas registrados.</Text>}
+        ListEmptyComponent={<Text style={styles.emptyText}>Todavía no hay observaciones registradas.</Text>}
       />
 
       <Pressable
         style={styles.fab}
         accessibilityRole="button"
-        accessibilityLabel="Agregar problema"
+        accessibilityLabel="Agregar observación"
         onPress={() => navigation.navigate('NewProblem', { inspectionId })}
       >
         <Text style={styles.fabText}>+</Text>
@@ -129,7 +130,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.lg,
   },
-  title: { ...typography.title, color: colors.textPrimary, flexShrink: 1 },
+  titleBlock: { flexShrink: 1, marginRight: spacing.sm },
+  tipoLabel: { ...typography.label, color: colors.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
+  title: { ...typography.title, color: colors.textPrimary },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   headerButton: {
     paddingVertical: spacing.xs,

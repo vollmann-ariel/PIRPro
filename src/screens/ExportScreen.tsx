@@ -41,13 +41,13 @@ export function ExportScreen({ route }: Props) {
       <Text style={styles.title}>
         {inspection?.tipoPrueba} — {inspection?.vin}
       </Text>
-      <Text style={styles.meta}>{reports.length} problemas registrados</Text>
+      <Text style={styles.meta}>{reports.length} observaciones registradas</Text>
 
       <Pressable style={[styles.button, isExporting && styles.buttonDisabled]} disabled={isExporting || reports.length === 0} onPress={handleExport}>
         <Text style={styles.buttonText}>{isExporting ? 'Generando…' : 'Exportar local (CSV + fotos)'}</Text>
       </Pressable>
 
-      {reports.length === 0 && <Text style={styles.meta}>Agregá al menos un problema antes de exportar.</Text>}
+      {reports.length === 0 && <Text style={styles.meta}>Agregá al menos una observación antes de exportar.</Text>}
     </View>
   );
 }

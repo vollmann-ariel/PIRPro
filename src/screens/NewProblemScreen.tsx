@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { DictationInput } from '../components/DictationInput';
@@ -34,10 +34,15 @@ export function NewProblemScreen({ route, navigation }: Props) {
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [isPir, setIsPir] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     captureGpsNonBlocking().then(setCoordinates);
   }, []);
+
+  function scrollToEnd() {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
+  }
 
   function handleAddPhoto() {
     promptPhotoSource(async (source) => {
@@ -80,12 +85,12 @@ export function NewProblemScreen({ route, navigation }: Props) {
   }
 
   return (
-    <KeyboardAvoidingScreen style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid photos={photoUris.map((uri) => ({ uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
 
       <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
 
-      <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve del problema" maxLength={80} />
+      <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve de la observación" maxLength={80} />
 
       <View style={styles.field}>
         <SeveritySelector value={severity} onChange={setSeverity} />
@@ -95,12 +100,26 @@ export function NewProblemScreen({ route, navigation }: Props) {
         <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
       </View>
 
-      <LabeledTextInput label="Horas" value={hoursText} onChangeText={setHoursText} placeholder="0" keyboardType="decimal-pad" />
+      <LabeledTextInput
+        label="Horas"
+        value={hoursText}
+        onChangeText={setHoursText}
+        placeholder="0"
+        keyboardType="decimal-pad"
+        onFocus={scrollToEnd}
+      />
 
-      <DictationInput label="Observaciones" value={observations} onChangeText={setObservations} placeholder="Observaciones adicionales" multiline />
+      <DictationInput
+        label="Modo de Falla"
+        value={observations}
+        onChangeText={setObservations}
+        placeholder="Modo de falla y notas adicionales"
+        multiline
+        onFocus={scrollToEnd}
+      />
 
       <Pressable style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} disabled={isSaving} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>{isSaving ? 'Guardando…' : 'Guardar problema'}</Text>
+        <Text style={styles.saveButtonText}>{isSaving ? 'Guardando…' : 'Guardar observación'}</Text>
       </Pressable>
     </KeyboardAvoidingScreen>
   );

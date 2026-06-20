@@ -1,14 +1,15 @@
-import { Pressable, Text } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { BrandMark, LOGO_HEIGHT } from '../components/BrandMark';
 import { ExportScreen } from '../screens/ExportScreen';
 import { InspectionPickerScreen } from '../screens/InspectionPickerScreen';
 import { NewProblemScreen } from '../screens/NewProblemScreen';
 import { ProblemDetailScreen } from '../screens/ProblemDetailScreen';
 import { ProblemListScreen } from '../screens/ProblemListScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
-import { colors } from '../theme/tokens';
+import { colors, spacing } from '../theme/tokens';
 
 export type RootStackParamList = {
   InspectionPicker: undefined;
@@ -25,17 +26,28 @@ export function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        screenOptions={{
+        screenOptions={({ navigation }) => ({
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.textPrimary,
           headerShadowVisible: false,
-        }}
+          headerLeft: () => (
+            <View style={styles.headerLeft}>
+              <BrandMark />
+              <View style={styles.divider} />
+              {navigation.canGoBack() && (
+                <Pressable accessibilityRole="button" accessibilityLabel="Volver" onPress={navigation.goBack} style={styles.backButton}>
+                  <View style={styles.backArrow} />
+                </Pressable>
+              )}
+            </View>
+          ),
+        })}
       >
         <Stack.Screen
           name="InspectionPicker"
           component={InspectionPickerScreen}
           options={({ navigation }) => ({
-            title: 'Inspecciones',
+            title: 'Reportes',
             headerRight: () => (
               <Pressable accessibilityRole="button" onPress={() => navigation.navigate('Settings')}>
                 <Text style={{ color: colors.primary }}>Ajustes</Text>
@@ -43,12 +55,27 @@ export function AppNavigator() {
             ),
           })}
         />
-        <Stack.Screen name="ProblemList" component={ProblemListScreen} options={{ title: 'Problemas' }} />
-        <Stack.Screen name="NewProblem" component={NewProblemScreen} options={{ title: 'Nuevo problema' }} />
-        <Stack.Screen name="ProblemDetail" component={ProblemDetailScreen} options={{ title: 'Detalle' }} />
+        <Stack.Screen name="ProblemList" component={ProblemListScreen} options={{ title: 'Observaciones' }} />
+        <Stack.Screen name="NewProblem" component={NewProblemScreen} options={{ title: 'Nueva observación' }} />
+        <Stack.Screen name="ProblemDetail" component={ProblemDetailScreen} options={{ title: 'Resumen' }} />
         <Stack.Screen name="Export" component={ExportScreen} options={{ title: 'Exportar' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ajustes' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginRight: spacing.sm },
+  backButton: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  backArrow: {
+    width: 9,
+    height: 9,
+    borderLeftWidth: 2.5,
+    borderBottomWidth: 2.5,
+    borderColor: colors.textPrimary,
+    transform: [{ rotate: '45deg' }],
+    marginLeft: 4,
+  },
+  divider: { width: 1, height: LOGO_HEIGHT * 0.8, backgroundColor: colors.textSecondary, marginLeft: spacing.xs },
+});

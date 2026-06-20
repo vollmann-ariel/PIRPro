@@ -10,9 +10,10 @@ type Props = {
   placeholder?: string;
   keyboardType?: KeyboardTypeOptions;
   maxLength?: number;
+  onFocus?: () => void;
 };
 
-export function LabeledTextInput({ label, value, onChangeText, placeholder, keyboardType, maxLength }: Props) {
+export function LabeledTextInput({ label, value, onChangeText, placeholder, keyboardType, maxLength, onFocus }: Props) {
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -24,6 +25,7 @@ export function LabeledTextInput({ label, value, onChangeText, placeholder, keyb
         placeholderTextColor={colors.textSecondary}
         keyboardType={keyboardType}
         maxLength={maxLength}
+        onFocus={onFocus}
       />
     </View>
   );

@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { forwardRef } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 type Props = {
@@ -8,16 +9,24 @@ type Props = {
   contentContainerStyle?: StyleProp<ViewStyle>;
 };
 
-export function KeyboardAvoidingScreen({ children, style, contentContainerStyle }: Props) {
+export const KeyboardAvoidingScreen = forwardRef<ScrollView, Props>(function KeyboardAvoidingScreen(
+  { children, style, contentContainerStyle },
+  ref
+) {
   return (
-    <KeyboardAvoidingView style={[styles.flex, style]} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={contentContainerStyle} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={[styles.flex, style]} behavior="padding">
+      <ScrollView
+        ref={ref}
+        contentContainerStyle={[contentContainerStyle, styles.contentPadding]}
+        keyboardShouldPersistTaps="handled"
+      >
         {children}
       </ScrollView>
     </KeyboardAvoidingView>
   );
-}
+});
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  contentPadding: { paddingBottom: Platform.OS === 'android' ? 240 : 120 },
 });

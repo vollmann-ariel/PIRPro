@@ -12,9 +12,10 @@ type Props = {
   placeholder?: string;
   multiline?: boolean;
   maxLength?: number;
+  onFocus?: () => void;
 };
 
-export function DictationInput({ label, value, onChangeText, placeholder, multiline = false, maxLength }: Props) {
+export function DictationInput({ label, value, onChangeText, placeholder, multiline = false, maxLength, onFocus }: Props) {
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -48,6 +49,7 @@ export function DictationInput({ label, value, onChangeText, placeholder, multil
         placeholder={placeholder}
         placeholderTextColor={colors.textSecondary}
         maxLength={maxLength}
+        onFocus={onFocus}
       />
     </View>
   );

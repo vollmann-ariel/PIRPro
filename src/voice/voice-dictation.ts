@@ -22,6 +22,7 @@ export function useVoiceDictation(onTranscript: (text: string) => void) {
   }, []);
 
   useSpeechRecognitionEvent('result', (event) => {
+    if (!isListening) return;
     const transcript = event.results[0]?.transcript;
     if (event.isFinal && transcript) {
       onTranscript(transcript);
@@ -29,11 +30,13 @@ export function useVoiceDictation(onTranscript: (text: string) => void) {
   });
 
   useSpeechRecognitionEvent('error', () => {
+    if (!isListening) return;
     setIsListening(false);
     ToastAndroid.show('No se pudo reconocer la voz, escribí la descripción manualmente', ToastAndroid.SHORT);
   });
 
   useSpeechRecognitionEvent('end', () => {
+    if (!isListening) return;
     setIsListening(false);
   });
 
