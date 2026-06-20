@@ -3,6 +3,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { DictationInput } from '../components/DictationInput';
+import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
@@ -34,6 +35,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [isPir, setIsPir] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -46,9 +48,17 @@ export function NewProblemScreen({ route, navigation }: Props) {
 
   function handleAddPhoto() {
     promptPhotoSource(async (source) => {
+      if (source === 'camera') {
+        setIsCameraOpen(true);
+        return;
+      }
       const uris = await pickPhotoUris(source);
       setPhotoUris((current) => [...current, ...uris]);
     });
+  }
+
+  function handleCapturePhoto(uri: string) {
+    setPhotoUris((current) => [...current, uri]);
   }
 
   function handleRemovePhoto(index: number) {
@@ -87,6 +97,12 @@ export function NewProblemScreen({ route, navigation }: Props) {
   return (
     <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid photos={photoUris.map((uri) => ({ uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
+      <InAppCamera
+        visible={isCameraOpen}
+        currentCount={photoUris.length}
+        onCapture={handleCapturePhoto}
+        onClose={() => setIsCameraOpen(false)}
+      />
 
       <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
 

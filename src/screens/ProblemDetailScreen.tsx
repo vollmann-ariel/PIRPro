@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { DictationInput } from '../components/DictationInput';
+import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
@@ -43,6 +44,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
   function scrollToEnd() {
@@ -82,6 +84,10 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
 
   function handleAddPhoto() {
     promptPhotoSource(async (source) => {
+      if (source === 'camera') {
+        setIsCameraOpen(true);
+        return;
+      }
       const uris = await pickPhotoUris(source);
       if (uris.length === 0) return;
       const settings = loadSettings();
@@ -93,6 +99,14 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
       }
       refresh();
     });
+  }
+
+  async function handleCapturePhoto(uri: string) {
+    const settings = loadSettings();
+    const nextIndex = getNextPhotoIndex(reportId);
+    const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
+    addPhotoToReport(reportId, fileName, localUri);
+    refresh();
   }
 
   function handleRemovePhoto(index: number) {
@@ -124,6 +138,12 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         editable={isEditing}
         onAddPress={handleAddPhoto}
         onRemove={handleRemovePhoto}
+      />
+      <InAppCamera
+        visible={isCameraOpen}
+        currentCount={photos.length}
+        onCapture={handleCapturePhoto}
+        onClose={() => setIsCameraOpen(false)}
       />
 
       {isEditing ? (

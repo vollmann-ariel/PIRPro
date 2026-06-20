@@ -50,6 +50,12 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que PIRPro use la cámara para fotografiar problemas."
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Permitir que PIRPro acceda a tu ubicación para registrar dónde se encontró el problema."
