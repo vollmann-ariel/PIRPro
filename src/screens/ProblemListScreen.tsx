@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   titleBlock: { flexShrink: 1, marginRight: spacing.sm },
   tipoLabel: { ...typography.label, color: colors.textSecondary, letterSpacing: 0.5, textTransform: 'uppercase' },
-  title: { ...typography.title, color: colors.textPrimary },
+  title: { ...typography.title, color: colors.textPrimary, fontSize: 18 },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   headerButton: {
     paddingVertical: spacing.xs,

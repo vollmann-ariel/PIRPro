@@ -40,17 +40,42 @@ export function getInspectionById(id: string): Inspection | null {
   return row ? toInspection(row) : null;
 }
 
+const FUZZY_VIN_DISTANCE = 3;
+
 export function findSimilarInspection(tipoPrueba: TipoPrueba, vin: string): Inspection | null {
   const candidates = listInspectionsByTipoPrueba(tipoPrueba);
   const normalizedVin = vin.trim().toUpperCase();
   let closest: { inspection: Inspection; dist: number } | null = null;
   for (const candidate of candidates) {
     const dist = distance(normalizedVin, candidate.vin.trim().toUpperCase());
-    if (dist > 0 && dist <= 3 && (!closest || dist < closest.dist)) {
+    if (dist > 0 && dist <= FUZZY_VIN_DISTANCE && (!closest || dist < closest.dist)) {
       closest = { inspection: candidate, dist };
     }
   }
   return closest?.inspection ?? null;
+}
+
+/** Substring matches first (most recently active first), then near-typo matches ordered by closeness. */
+export function searchInspectionsByVin(tipoPrueba: TipoPrueba, query: string): Inspection[] {
+  const candidates = listInspectionsByTipoPrueba(tipoPrueba);
+  const normalizedQuery = query.trim().toUpperCase();
+  if (!normalizedQuery) return candidates;
+
+  const exact: Inspection[] = [];
+  const fuzzy: { inspection: Inspection; dist: number }[] = [];
+  for (const candidate of candidates) {
+    const normalizedVin = candidate.vin.trim().toUpperCase();
+    if (normalizedVin.includes(normalizedQuery)) {
+      exact.push(candidate);
+      continue;
+    }
+    const dist = distance(normalizedQuery, normalizedVin);
+    if (dist <= FUZZY_VIN_DISTANCE) {
+      fuzzy.push({ inspection: candidate, dist });
+    }
+  }
+  fuzzy.sort((a, b) => a.dist - b.dist);
+  return [...exact, ...fuzzy.map((f) => f.inspection)];
 }
 
 export function createInspection(tipoPrueba: TipoPrueba, vin: string): Inspection {

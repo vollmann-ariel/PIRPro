@@ -3,7 +3,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { createInspection, findSimilarInspection, listInspectionsByTipoPrueba } from '../db/inspections-repository';
+import { createInspection, findSimilarInspection, listInspectionsByTipoPrueba, searchInspectionsByVin } from '../db/inspections-repository';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { TIPOS_PRUEBA, type Inspection, type TipoPrueba } from '../types/inspection';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -22,14 +22,9 @@ export function InspectionPickerScreen({ navigation }: Props) {
   );
 
   const filtered = useMemo(() => {
-    const normalized = query.trim().toUpperCase();
-    if (!normalized) return inspections;
-    return inspections.filter((inspection) => inspection.vin.toUpperCase().includes(normalized));
-  }, [inspections, query]);
-  const similarSuggestion = useMemo(() => {
-    if (!tipoPrueba || filtered.length > 0 || !query.trim()) return null;
-    return findSimilarInspection(tipoPrueba, query.trim());
-  }, [tipoPrueba, filtered, query]);
+    if (!tipoPrueba) return inspections;
+    return searchInspectionsByVin(tipoPrueba, query);
+  }, [tipoPrueba, inspections, query]);
 
   function openInspection(inspection: Inspection) {
     navigation.navigate('ProblemList', { inspectionId: inspection.id });
@@ -82,14 +77,21 @@ export function InspectionPickerScreen({ navigation }: Props) {
 
       {tipoPrueba && (
         <>
-          <TextInput
-            style={styles.input}
-            placeholder="VIN del chasis (buscar o crear)"
-            placeholderTextColor={colors.textSecondary}
-            autoCapitalize="characters"
-            value={query}
-            onChangeText={setQuery}
-          />
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.input}
+              placeholder="VIN del chasis (buscar o crear)"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="characters"
+              value={query}
+              onChangeText={setQuery}
+            />
+            {query.length > 0 && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Borrar VIN" style={styles.clearButton} onPress={() => setQuery('')}>
+                <Text style={styles.clearButtonText}>×</Text>
+              </Pressable>
+            )}
+          </View>
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.id}
@@ -101,20 +103,11 @@ export function InspectionPickerScreen({ navigation }: Props) {
               </Pressable>
             )}
             ListFooterComponent={
-              <>
-                {similarSuggestion && (
-                  <Pressable style={styles.suggestionBanner} onPress={() => openInspection(similarSuggestion)}>
-                    <Text style={styles.suggestionBannerText}>
-                      ⚠ ¿Quisiste decir "{similarSuggestion.vin}"? Ya existe un reporte {similarSuggestion.tipoPrueba} con ese VIN. Tocá para usarlo.
-                    </Text>
-                  </Pressable>
-                )}
-                {query.trim().length > 0 && (
-                  <Pressable style={styles.createItem} onPress={handleCreate}>
-                    <Text style={styles.createItemText}>+ Crear nuevo reporte con VIN: {query.trim()}</Text>
-                  </Pressable>
-                )}
-              </>
+              query.trim().length > 0 ? (
+                <Pressable style={styles.createItem} onPress={handleCreate}>
+                  <Text style={styles.createItemText}>+ Crear nuevo reporte con VIN: {query.trim()}</Text>
+                </Pressable>
+              ) : null
             }
           />
         </>
@@ -138,7 +131,9 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { ...typography.body, color: colors.textPrimary },
   chipTextSelected: { color: colors.textInverse },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   input: {
+    flex: 1,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -147,8 +142,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     color: colors.textPrimary,
     ...typography.body,
-    marginBottom: spacing.md,
   },
+  clearButton: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearButtonText: { fontSize: 18, lineHeight: 18, color: colors.textSecondary },
   list: { gap: spacing.sm, paddingBottom: spacing.xl },
   resultItem: {
     backgroundColor: colors.surface,
@@ -168,12 +171,4 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   createItemText: { ...typography.body, color: colors.primary },
-  suggestionBanner: {
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.dangerMuted,
-    borderWidth: 1,
-    borderColor: colors.danger,
-  },
-  suggestionBannerText: { ...typography.body, color: colors.danger },
 });
