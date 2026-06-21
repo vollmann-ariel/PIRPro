@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { ContextMenu, type ContextMenuPosition } from '../components/ContextMenu';
 import { getInspectionById } from '../db/inspections-repository';
 import { deleteReportCompletely, listReportsByInspection } from '../db/reports-repository';
 import { colors, elevation, radius, spacing, typography } from '../theme/tokens';
@@ -24,6 +25,8 @@ export function ProblemListScreen({ route, navigation }: Props) {
   const { inspectionId } = route.params;
   const [inspection, setInspection] = useState<Inspection | null>(null);
   const [reports, setReports] = useState<Report[]>([]);
+  const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
+  const [menuTarget, setMenuTarget] = useState<Report | null>(null);
 
   const refresh = useCallback(() => {
     setInspection(getInspectionById(inspectionId));
@@ -39,11 +42,9 @@ export function ProblemListScreen({ route, navigation }: Props) {
     });
   }
 
-  function handleRowLongPress(report: Report) {
-    Alert.alert(report.title || '(sin título)', undefined, [
-      { text: 'Eliminar', style: 'destructive', onPress: () => handleDelete(report) },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
+  function handleRowLongPress(report: Report, event: { nativeEvent: { pageX: number; pageY: number } }) {
+    setMenuTarget(report);
+    setMenuPosition({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY });
   }
 
   return (
@@ -63,7 +64,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
           <Pressable
             style={styles.reportItem}
             onPress={() => navigation.navigate('ProblemDetail', { reportId: item.id })}
-            onLongPress={() => handleRowLongPress(item)}
+            onLongPress={(event) => handleRowLongPress(item, event)}
           >
             <View style={[styles.severityBadge, { backgroundColor: SEVERITY_COLORS[item.severity] }]}>
               <Text style={styles.severityBadgeText}>{item.severity}</Text>
@@ -90,6 +91,13 @@ export function ProblemListScreen({ route, navigation }: Props) {
       >
         <Text style={styles.fabText}>+</Text>
       </Pressable>
+
+      <ContextMenu
+        visible={menuPosition != null}
+        position={menuPosition}
+        onDismiss={() => setMenuPosition(null)}
+        items={menuTarget ? [{ label: 'Eliminar', destructive: true, onPress: () => handleDelete(menuTarget) }] : []}
+      />
     </View>
   );
 }

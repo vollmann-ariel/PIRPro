@@ -3,6 +3,7 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import { ContextMenu, type ContextMenuPosition } from '../components/ContextMenu';
 import {
   createInspection,
   deleteInspectionRow,
@@ -25,6 +26,8 @@ export function InspectionPickerScreen({ navigation }: Props) {
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [editingInspectionId, setEditingInspectionId] = useState<string | null>(null);
   const [editingVinText, setEditingVinText] = useState('');
+  const [menuPosition, setMenuPosition] = useState<ContextMenuPosition | null>(null);
+  const [menuTarget, setMenuTarget] = useState<Inspection | null>(null);
 
   const refresh = useCallback(() => {
     setInspections(tipoPrueba ? listInspectionsByTipoPrueba(tipoPrueba) : []);
@@ -41,19 +44,14 @@ export function InspectionPickerScreen({ navigation }: Props) {
     navigation.navigate('ProblemList', { inspectionId: inspection.id });
   }
 
-  function handleVinLongPress(inspection: Inspection) {
-    Alert.alert(inspection.vin, undefined, [
-      { text: 'Exportar', onPress: () => navigation.navigate('Export', { inspectionId: inspection.id }) },
-      {
-        text: 'Editar VIN',
-        onPress: () => {
-          setEditingInspectionId(inspection.id);
-          setEditingVinText(inspection.vin);
-        },
-      },
-      { text: 'Eliminar', style: 'destructive', onPress: () => handleDeleteInspection(inspection) },
-      { text: 'Cancelar', style: 'cancel' },
-    ]);
+  function handleVinLongPress(inspection: Inspection, event: { nativeEvent: { pageX: number; pageY: number } }) {
+    setMenuTarget(inspection);
+    setMenuPosition({ x: event.nativeEvent.pageX, y: event.nativeEvent.pageY });
+  }
+
+  function handleStartEditVin(inspection: Inspection) {
+    setEditingInspectionId(inspection.id);
+    setEditingVinText(inspection.vin);
   }
 
   function handleSaveVinEdit() {
@@ -173,7 +171,11 @@ export function InspectionPickerScreen({ navigation }: Props) {
                   </View>
                 </View>
               ) : (
-                <Pressable style={styles.resultItem} onPress={() => openInspection(item)} onLongPress={() => handleVinLongPress(item)}>
+                <Pressable
+                  style={styles.resultItem}
+                  onPress={() => openInspection(item)}
+                  onLongPress={(event) => handleVinLongPress(item, event)}
+                >
                   <Text style={styles.resultVin}>{item.vin}</Text>
                   <Text style={styles.resultMeta}>Actualizado {new Date(item.lastActivityAt).toLocaleDateString()}</Text>
                 </Pressable>
@@ -189,6 +191,21 @@ export function InspectionPickerScreen({ navigation }: Props) {
           />
         </>
       )}
+
+      <ContextMenu
+        visible={menuPosition != null}
+        position={menuPosition}
+        onDismiss={() => setMenuPosition(null)}
+        items={
+          menuTarget
+            ? [
+                { label: 'Exportar', onPress: () => navigation.navigate('Export', { inspectionId: menuTarget.id }) },
+                { label: 'Editar VIN', onPress: () => handleStartEditVin(menuTarget) },
+                { label: 'Eliminar', destructive: true, onPress: () => handleDeleteInspection(menuTarget) },
+              ]
+            : []
+        }
+      />
     </View>
   );
 }
