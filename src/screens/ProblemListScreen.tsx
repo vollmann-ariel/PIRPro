@@ -7,19 +7,13 @@ import { ContextMenu, type ContextMenuPosition } from '../components/ContextMenu
 import { getInspectionById } from '../db/inspections-repository';
 import { deleteReportCompletely, listReportsByInspection } from '../db/reports-repository';
 import { colors, elevation, radius, spacing, typography } from '../theme/tokens';
+import { SEVERITY_COLORS, SEVERITY_LABELS } from '../theme/severity';
 import type { Inspection } from '../types/inspection';
-import type { Report, Severity } from '../types/report';
+import type { Report } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProblemList'>;
-
-const SEVERITY_COLORS: Record<Severity, string> = {
-  3: colors.severity3,
-  6: colors.severity6,
-  20: colors.severity20,
-  50: colors.severity50,
-};
 
 export function ProblemListScreen({ route, navigation }: Props) {
   const { inspectionId } = route.params;
@@ -67,7 +61,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
             onLongPress={(event) => handleRowLongPress(item, event)}
           >
             <View style={[styles.severityBadge, { backgroundColor: SEVERITY_COLORS[item.severity] }]}>
-              <Text style={styles.severityBadgeText}>{item.severity}</Text>
+              <Text style={styles.severityBadgeText}>{SEVERITY_LABELS[item.severity]}</Text>
             </View>
             <View style={styles.reportInfo}>
               <Text style={styles.reportTitle} numberOfLines={2}>

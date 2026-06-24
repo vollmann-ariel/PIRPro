@@ -1,13 +1,6 @@
 import { SegmentedSelector } from './SegmentedSelector';
-import { colors } from '../theme/tokens';
+import { SEVERITY_COLORS, SEVERITY_LABELS } from '../theme/severity';
 import { SEVERITIES, type Severity } from '../types/report';
-
-const SEVERITY_COLORS: Record<Severity, string> = {
-  3: colors.severity3,
-  6: colors.severity6,
-  20: colors.severity20,
-  50: colors.severity50,
-};
 
 type Props = {
   value: Severity | null;
@@ -20,7 +13,7 @@ export function SeveritySelector({ value, onChange }: Props) {
       label="Severidad"
       value={value}
       onChange={onChange}
-      options={SEVERITIES.map((severity) => ({ value: severity, label: String(severity), color: SEVERITY_COLORS[severity] }))}
+      options={SEVERITIES.map((severity) => ({ value: severity, label: SEVERITY_LABELS[severity], color: SEVERITY_COLORS[severity] }))}
     />
   );
 }

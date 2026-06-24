@@ -3,15 +3,11 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DictationInput } from '../components/DictationInput';
 import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
-import { LabeledTextInput } from '../components/LabeledTextInput';
+import { ObservationFields } from '../components/ObservationFields';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PhotoPreviewOverlay } from '../components/PhotoPreviewOverlay';
-import { PirCheckbox } from '../components/PirCheckbox';
-import { PlantOriginToggle } from '../components/PlantOriginToggle';
-import { SeveritySelector } from '../components/SeveritySelector';
 import {
   addPhotoToReport,
   deleteReportCompletely,
@@ -25,7 +21,8 @@ import {
 import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
-import type { PlantOrigin, Report, ReportPhoto, Severity } from '../types/report';
+import { SEVERITY_LABELS } from '../theme/severity';
+import { hasRequiredObservationFields, type PlantOrigin, type Report, type ReportPhoto, type Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
 import type { PhotoExifMetadata } from '../utils/exif';
 import { formatHours, parseHours } from '../utils/hours';
@@ -75,15 +72,16 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   function handleSaveEdit() {
-    if (!title.trim() || !severity || !plantOrigin) return;
-    updateReport(reportId, { title: title.trim(), observations, severity, plantOrigin, hours: parseHours(hoursText) });
+    if (!hasRequiredObservationFields(title, severity, plantOrigin)) return;
+    updateReport(reportId, { title: title.trim(), observations, severity: severity!, plantOrigin: plantOrigin!, hours: parseHours(hoursText) });
     setIsEditing(false);
     refresh();
   }
 
   function handleTogglePir() {
-    setReportPir(reportId, !report?.isPir);
-    refresh();
+    if (!report) return;
+    setReportPir(reportId, !report.isPir);
+    setReport(getReportById(reportId));
   }
 
   function handleAddPhoto() {
@@ -179,26 +177,20 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
 
       {isEditing ? (
         <>
-          <PirCheckbox value={report.isPir} onToggle={handleTogglePir} />
-
-          <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve de la observación" maxLength={80} />
-          <SeveritySelector value={severity} onChange={setSeverity} />
-          <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
-          <LabeledTextInput
-            label="Horas"
-            value={hoursText}
-            onChangeText={setHoursText}
-            placeholder="0"
-            keyboardType="decimal-pad"
-            onFocus={scrollToEnd}
-          />
-          <DictationInput
-            label="Modo de Falla"
-            value={observations}
-            onChangeText={setObservations}
-            placeholder="Modo de falla y notas adicionales"
-            multiline
-            onFocus={scrollToEnd}
+          <ObservationFields
+            title={title}
+            onTitleChange={setTitle}
+            severity={severity}
+            onSeverityChange={setSeverity}
+            isPir={report.isPir}
+            onTogglePir={handleTogglePir}
+            plantOrigin={plantOrigin}
+            onPlantOriginChange={setPlantOrigin}
+            hoursText={hoursText}
+            onHoursChange={setHoursText}
+            observations={observations}
+            onObservationsChange={setObservations}
+            onFieldFocus={scrollToEnd}
           />
           <View style={styles.actionRow}>
             <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(false)}>
@@ -215,7 +207,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
           <Text style={styles.title}>{report.title || '(sin título)'}</Text>
           {report.observations ? <Text style={styles.observations}>{report.observations}</Text> : null}
           <Text style={styles.meta}>
-            Severidad {report.severity} · Planta {report.plantOrigin}
+            Severidad {SEVERITY_LABELS[report.severity]} · Planta {report.plantOrigin}
             {report.hours != null ? ` · ${report.hours} h` : ''}
           </Text>
           <Text style={styles.meta}>📅 {new Date(report.createdAt).toLocaleString()}</Text>

@@ -2,20 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import { DictationInput } from '../components/DictationInput';
 import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
-import { LabeledTextInput } from '../components/LabeledTextInput';
+import { ObservationFields } from '../components/ObservationFields';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
-import { PirCheckbox } from '../components/PirCheckbox';
-import { PlantOriginToggle } from '../components/PlantOriginToggle';
-import { SeveritySelector } from '../components/SeveritySelector';
 import { addPhotoToReport, createReport } from '../db/reports-repository';
 import { captureGpsNonBlocking, type Coordinates } from '../location/gps-capture';
 import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
-import type { PlantOrigin, Severity } from '../types/report';
+import { hasRequiredObservationFields, type PlantOrigin, type Severity } from '../types/report';
 import type { PhotoExifMetadata } from '../utils/exif';
 import { parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
@@ -67,7 +63,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
   }
 
   async function handleSave() {
-    if (!title.trim() || !severity || !plantOrigin || photos.length < MIN_PHOTOS) {
+    if (!hasRequiredObservationFields(title, severity, plantOrigin) || photos.length < MIN_PHOTOS) {
       Alert.alert('Faltan datos', `Elegí un título, severidad, planta de origen, y al menos ${MIN_PHOTOS} fotos.`);
       return;
     }
@@ -77,8 +73,8 @@ export function NewProblemScreen({ route, navigation }: Props) {
         inspectionId,
         title: title.trim(),
         observations,
-        severity,
-        plantOrigin,
+        severity: severity!,
+        plantOrigin: plantOrigin!,
         hours: parseHours(hoursText),
         latitude: coordinates?.latitude ?? null,
         longitude: coordinates?.longitude ?? null,
@@ -105,34 +101,20 @@ export function NewProblemScreen({ route, navigation }: Props) {
         onClose={() => setIsCameraOpen(false)}
       />
 
-      <DictationInput label="Título" value={title} onChangeText={setTitle} placeholder="Título breve de la observación" maxLength={80} />
-
-      <View style={styles.field}>
-        <SeveritySelector value={severity} onChange={setSeverity} />
-      </View>
-
-      <PirCheckbox value={isPir} onToggle={() => setIsPir((current) => !current)} />
-
-      <View style={styles.field}>
-        <PlantOriginToggle value={plantOrigin} onChange={setPlantOrigin} />
-      </View>
-
-      <LabeledTextInput
-        label="Horas"
-        value={hoursText}
-        onChangeText={setHoursText}
-        placeholder="0"
-        keyboardType="decimal-pad"
-        onFocus={scrollToEnd}
-      />
-
-      <DictationInput
-        label="Modo de Falla"
-        value={observations}
-        onChangeText={setObservations}
-        placeholder="Modo de falla y notas adicionales"
-        multiline
-        onFocus={scrollToEnd}
+      <ObservationFields
+        title={title}
+        onTitleChange={setTitle}
+        severity={severity}
+        onSeverityChange={setSeverity}
+        isPir={isPir}
+        onTogglePir={() => setIsPir((current) => !current)}
+        plantOrigin={plantOrigin}
+        onPlantOriginChange={setPlantOrigin}
+        hoursText={hoursText}
+        onHoursChange={setHoursText}
+        observations={observations}
+        onObservationsChange={setObservations}
+        onFieldFocus={scrollToEnd}
       />
 
       <Pressable style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} disabled={isSaving} onPress={handleSave}>
@@ -145,7 +127,6 @@ export function NewProblemScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.lg },
-  field: { gap: spacing.sm },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: radius.md,

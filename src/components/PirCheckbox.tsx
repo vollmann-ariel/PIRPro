@@ -5,11 +5,18 @@ import { colors, radius, spacing, typography } from '../theme/tokens';
 type Props = {
   value: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 };
 
-export function PirCheckbox({ value, onToggle }: Props) {
+export function PirCheckbox({ value, onToggle, disabled }: Props) {
   return (
-    <Pressable style={styles.row} accessibilityRole="checkbox" accessibilityState={{ checked: value }} onPress={onToggle}>
+    <Pressable
+      style={[styles.row, disabled && styles.rowDisabled]}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: value, disabled }}
+      disabled={disabled}
+      onPress={onToggle}
+    >
       <View style={[styles.checkbox, value && styles.checkboxChecked]}>{value && <Text style={styles.checkboxMark}>✓</Text>}</View>
       <Text style={styles.label}>Marcar como PIR</Text>
     </Pressable>
@@ -18,6 +25,7 @@ export function PirCheckbox({ value, onToggle }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  rowDisabled: { opacity: 0.5 },
   checkbox: {
     width: 24,
     height: 24,

@@ -23,7 +23,7 @@ export function getDatabase(): SQLiteDatabase {
         title TEXT NOT NULL DEFAULT '',
         observations TEXT NOT NULL DEFAULT '',
         created_at TEXT NOT NULL,
-        severity INTEGER NOT NULL CHECK (severity IN (3,6,20,50)),
+        severity TEXT NOT NULL CHECK (severity IN ('Obs','3','6','20','50')),
         plant_origin TEXT NOT NULL CHECK (plant_origin IN ('BR','AR')),
         hours REAL,
         latitude REAL,
@@ -55,6 +55,8 @@ export function getDatabase(): SQLiteDatabase {
 }
 
 function runMigrations(database: SQLiteDatabase): void {
+  migrateSeverityColumnToText(database);
+
   const columns = database.getAllSync<{ name: string }>('PRAGMA table_info(reports)');
   const columnNames = new Set(columns.map((column) => column.name));
 
@@ -87,4 +89,44 @@ function runMigrations(database: SQLiteDatabase): void {
   if (!photoColumnNames.has('longitude')) {
     database.execSync('ALTER TABLE report_photos ADD COLUMN longitude REAL;');
   }
+}
+
+function migrateSeverityColumnToText(database: SQLiteDatabase): void {
+  const tableSchema = database.getFirstSync<{ sql: string }>(
+    "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'reports'"
+  );
+  const needsMigration = tableSchema != null && tableSchema.sql.includes('severity IN (3,6,20,50)');
+  if (!needsMigration) return;
+
+  database.execSync(`
+    BEGIN;
+
+    CREATE TABLE reports_new (
+      id TEXT PRIMARY KEY NOT NULL,
+      inspection_id TEXT NOT NULL REFERENCES inspections(id),
+      title TEXT NOT NULL DEFAULT '',
+      observations TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      severity TEXT NOT NULL CHECK (severity IN ('Obs','3','6','20','50')),
+      plant_origin TEXT NOT NULL CHECK (plant_origin IN ('BR','AR')),
+      hours REAL,
+      latitude REAL,
+      longitude REAL,
+      photo_count INTEGER NOT NULL DEFAULT 0,
+      sync_status TEXT NOT NULL DEFAULT 'local_only' CHECK (sync_status IN ('local_only','uploaded','needs_reupload')),
+      is_pir INTEGER NOT NULL DEFAULT 0
+    );
+
+    INSERT INTO reports_new (id, inspection_id, title, observations, created_at, severity, plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir)
+    SELECT id, inspection_id, title, observations, created_at, CAST(severity AS TEXT), plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir
+    FROM reports;
+
+    DROP TABLE reports;
+
+    ALTER TABLE reports_new RENAME TO reports;
+
+    CREATE INDEX IF NOT EXISTS idx_reports_inspection_id ON reports(inspection_id);
+
+    COMMIT;
+  `);
 }

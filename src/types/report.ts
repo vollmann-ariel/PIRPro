@@ -1,4 +1,4 @@
-export const SEVERITIES = [3, 6, 20, 50] as const;
+export const SEVERITIES = ['Obs', '3', '6', '20', '50'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
 export const PLANT_ORIGINS = ['BR', 'AR'] as const;
@@ -36,3 +36,7 @@ export type ReportPhoto = {
 };
 
 export type CompressionPreset = 'light' | 'medium' | 'high';
+
+export function hasRequiredObservationFields(title: string, severity: Severity | null, plantOrigin: PlantOrigin | null): boolean {
+  return title.trim().length > 0 && severity != null && plantOrigin != null;
+}

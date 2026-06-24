@@ -12,6 +12,7 @@ export const colors = {
   dangerMuted: '#3A1A1C',
   success: '#3FAE6A',
   successMuted: '#163322',
+  severityObs: '#6B7280',
   severity3: '#3FAE6A',
   severity6: '#E0B400',
   severity20: '#F0883C',
