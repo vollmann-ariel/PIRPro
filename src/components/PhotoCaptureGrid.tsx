@@ -2,7 +2,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, spacing, typography } from '../theme/tokens';
 
-type Photo = { uri: string };
+type Photo = { uri: string; exifTakenAt?: string | null; latitude?: number | null; longitude?: number | null };
 
 type Props = {
   photos: Photo[];
@@ -11,9 +11,10 @@ type Props = {
   showCounter?: boolean;
   onAddPress?: () => void;
   onRemove?: (index: number) => void;
+  onPreview?: (index: number) => void;
 };
 
-export function PhotoCaptureGrid({ photos, minRequired, editable = true, showCounter = true, onAddPress, onRemove }: Props) {
+export function PhotoCaptureGrid({ photos, minRequired, editable = true, showCounter = true, onAddPress, onRemove, onPreview }: Props) {
   return (
     <View>
       <View style={styles.headerRow}>
@@ -27,7 +28,9 @@ export function PhotoCaptureGrid({ photos, minRequired, editable = true, showCou
       <View style={styles.grid}>
         {photos.map((photo, index) => (
           <View key={photo.uri} style={styles.thumbnailWrapper}>
-            <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
+            <Pressable accessibilityRole="imagebutton" accessibilityLabel={`Ver foto ${index + 1}`} disabled={!onPreview} onPress={() => onPreview?.(index)}>
+              <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
+            </Pressable>
             {editable && (
               <Pressable
                 accessibilityRole="button"

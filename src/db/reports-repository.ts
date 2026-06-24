@@ -3,6 +3,7 @@ import { touchInspection } from './inspections-repository';
 import { deletePhotoFile, deleteReportDirectory } from '../storage/photo-storage';
 import { createId } from '../utils/ids';
 import type { PlantOrigin, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
+import type { PhotoExifMetadata } from '../utils/exif';
 
 type ReportRow = {
   id: string;
@@ -26,6 +27,9 @@ type ReportPhotoRow = {
   file_name: string;
   local_uri: string;
   taken_at: string;
+  exif_taken_at: string | null;
+  latitude: number | null;
+  longitude: number | null;
   uploaded_to_onedrive: number;
   pending_remote_delete: number;
 };
@@ -55,6 +59,9 @@ function toReportPhoto(row: ReportPhotoRow): ReportPhoto {
     fileName: row.file_name,
     localUri: row.local_uri,
     takenAt: row.taken_at,
+    exifTakenAt: row.exif_taken_at,
+    latitude: row.latitude,
+    longitude: row.longitude,
     uploadedToOnedrive: row.uploaded_to_onedrive === 1,
     pendingRemoteDelete: row.pending_remote_delete === 1,
   };
@@ -191,23 +198,30 @@ export function deleteReportCompletely(id: string): void {
   deleteReportDirectory(id);
 }
 
-export function addPhotoToReport(reportId: string, fileName: string, localUri: string): ReportPhoto {
+export function addPhotoToReport(reportId: string, fileName: string, localUri: string, exif?: PhotoExifMetadata): ReportPhoto {
   const photo: ReportPhoto = {
     id: createId(),
     reportId,
     fileName,
     localUri,
     takenAt: new Date().toISOString(),
+    exifTakenAt: exif?.takenAt ?? null,
+    latitude: exif?.latitude ?? null,
+    longitude: exif?.longitude ?? null,
     uploadedToOnedrive: false,
     pendingRemoteDelete: false,
   };
   getDatabase().runSync(
-    'INSERT INTO report_photos (id, report_id, file_name, local_uri, taken_at, uploaded_to_onedrive, pending_remote_delete) VALUES (?, ?, ?, ?, ?, 0, 0)',
+    `INSERT INTO report_photos (id, report_id, file_name, local_uri, taken_at, exif_taken_at, latitude, longitude, uploaded_to_onedrive, pending_remote_delete)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`,
     photo.id,
     photo.reportId,
     photo.fileName,
     photo.localUri,
-    photo.takenAt
+    photo.takenAt,
+    photo.exifTakenAt,
+    photo.latitude,
+    photo.longitude
   );
   getDatabase().runSync(
     'UPDATE reports SET photo_count = photo_count + 1 WHERE id = ?',

@@ -39,6 +39,9 @@ export function getDatabase(): SQLiteDatabase {
         file_name TEXT NOT NULL,
         local_uri TEXT NOT NULL,
         taken_at TEXT NOT NULL,
+        exif_taken_at TEXT,
+        latitude REAL,
+        longitude REAL,
         uploaded_to_onedrive INTEGER NOT NULL DEFAULT 0,
         pending_remote_delete INTEGER NOT NULL DEFAULT 0
       );
@@ -70,5 +73,18 @@ function runMigrations(database: SQLiteDatabase): void {
     } else {
       database.execSync("ALTER TABLE reports ADD COLUMN observations TEXT NOT NULL DEFAULT '';");
     }
+  }
+
+  const photoColumns = database.getAllSync<{ name: string }>('PRAGMA table_info(report_photos)');
+  const photoColumnNames = new Set(photoColumns.map((column) => column.name));
+
+  if (!photoColumnNames.has('exif_taken_at')) {
+    database.execSync('ALTER TABLE report_photos ADD COLUMN exif_taken_at TEXT;');
+  }
+  if (!photoColumnNames.has('latitude')) {
+    database.execSync('ALTER TABLE report_photos ADD COLUMN latitude REAL;');
+  }
+  if (!photoColumnNames.has('longitude')) {
+    database.execSync('ALTER TABLE report_photos ADD COLUMN longitude REAL;');
   }
 }

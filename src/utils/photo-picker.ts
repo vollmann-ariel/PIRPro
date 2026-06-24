@@ -1,5 +1,9 @@
-import { Alert } from 'react-native';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+
+import { extractPhotoExif, type PhotoExifMetadata } from './exif';
+
+export type PickedPhoto = { uri: string; exif: PhotoExifMetadata };
 
 export function promptPhotoSource(onPick: (source: 'camera' | 'gallery') => void): void {
   Alert.alert('Agregar foto', undefined, [
@@ -9,8 +13,18 @@ export function promptPhotoSource(onPick: (source: 'camera' | 'gallery') => void
   ]);
 }
 
-export async function pickPhotoUris(source: 'camera' | 'gallery'): Promise<string[]> {
-  const options: ImagePicker.ImagePickerOptions = { mediaTypes: 'images', quality: 1, allowsMultipleSelection: source === 'gallery' };
+export async function pickPhotoUris(source: 'camera' | 'gallery'): Promise<PickedPhoto[]> {
+  if (source === 'gallery' && Platform.OS === 'android') {
+    // Android redacts GPS EXIF tags from gallery photos unless this permission is granted.
+    await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_MEDIA_LOCATION);
+  }
+  const options: ImagePicker.ImagePickerOptions = {
+    mediaTypes: 'images',
+    quality: 1,
+    allowsMultipleSelection: source === 'gallery',
+    exif: true,
+  };
   const result = source === 'camera' ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
-  return result.canceled ? [] : result.assets.map((asset) => asset.uri);
+  if (result.canceled) return [];
+  return result.assets.map((asset) => ({ uri: asset.uri, exif: extractPhotoExif(asset.exif ?? null) }));
 }

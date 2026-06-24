@@ -28,6 +28,9 @@ export type ReportPhoto = {
   fileName: string;
   localUri: string;
   takenAt: string;
+  exifTakenAt: string | null;
+  latitude: number | null;
+  longitude: number | null;
   uploadedToOnedrive: boolean;
   pendingRemoteDelete: boolean;
 };

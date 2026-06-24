@@ -8,6 +8,7 @@ import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { LabeledTextInput } from '../components/LabeledTextInput';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
+import { PhotoPreviewOverlay } from '../components/PhotoPreviewOverlay';
 import { PirCheckbox } from '../components/PirCheckbox';
 import { PlantOriginToggle } from '../components/PlantOriginToggle';
 import { SeveritySelector } from '../components/SeveritySelector';
@@ -26,6 +27,7 @@ import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { PlantOrigin, Report, ReportPhoto, Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
+import type { PhotoExifMetadata } from '../utils/exif';
 import { formatHours, parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -45,6 +47,8 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   function scrollToEnd() {
@@ -83,30 +87,45 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   function handleAddPhoto() {
+    if (isProcessingPhoto) return;
     promptPhotoSource(async (source) => {
       if (source === 'camera') {
         setIsCameraOpen(true);
         return;
       }
-      const uris = await pickPhotoUris(source);
-      if (uris.length === 0) return;
-      const settings = loadSettings();
-      let nextIndex = getNextPhotoIndex(reportId);
-      for (const uri of uris) {
-        const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
-        addPhotoToReport(reportId, fileName, localUri);
-        nextIndex += 1;
+      const picked = await pickPhotoUris(source);
+      if (picked.length === 0) return;
+      setIsProcessingPhoto(true);
+      try {
+        const settings = loadSettings();
+        let nextIndex = getNextPhotoIndex(reportId);
+        for (const { uri, exif } of picked) {
+          const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
+          addPhotoToReport(reportId, fileName, localUri, exif);
+          nextIndex += 1;
+        }
+        refresh();
+      } finally {
+        setIsProcessingPhoto(false);
       }
-      refresh();
     });
   }
 
-  async function handleCapturePhoto(uri: string) {
-    const settings = loadSettings();
-    const nextIndex = getNextPhotoIndex(reportId);
-    const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
-    addPhotoToReport(reportId, fileName, localUri);
-    refresh();
+  async function handleCapturePhoto(uri: string, exif: PhotoExifMetadata) {
+    setIsProcessingPhoto(true);
+    try {
+      const settings = loadSettings();
+      const nextIndex = getNextPhotoIndex(reportId);
+      const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
+      addPhotoToReport(reportId, fileName, localUri, exif);
+      refresh();
+    } finally {
+      setIsProcessingPhoto(false);
+    }
+  }
+
+  function handleClosePreview() {
+    setPreviewIndex(null);
   }
 
   function handleRemovePhoto(index: number) {
@@ -130,16 +149,27 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     });
   }
 
+  const previewPhotos = photos.map((photo) => ({
+    uri: photo.localUri,
+    exifTakenAt: photo.exifTakenAt,
+    latitude: photo.latitude,
+    longitude: photo.longitude,
+  }));
+  const previewPhoto = previewIndex != null ? previewPhotos[previewIndex] ?? null : null;
+
   return (
-    <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.flex}>
+      <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
       <PhotoCaptureGrid
-        photos={photos.map((photo) => ({ uri: photo.localUri }))}
+        photos={previewPhotos}
         minRequired={MIN_PHOTOS}
         editable={isEditing}
         showCounter={false}
         onAddPress={handleAddPhoto}
         onRemove={handleRemovePhoto}
+        onPreview={setPreviewIndex}
       />
+      {isProcessingPhoto && <Text style={styles.processingText}>Procesando foto…</Text>}
       <InAppCamera
         visible={isCameraOpen}
         currentCount={photos.length}
@@ -206,15 +236,20 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
           </View>
         </>
       )}
-    </KeyboardAvoidingScreen>
+      </KeyboardAvoidingScreen>
+
+      <PhotoPreviewOverlay photo={previewPhoto} onClose={handleClosePreview} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.lg, gap: spacing.md },
   title: { ...typography.title, color: colors.textPrimary },
   observations: { ...typography.body, color: colors.textSecondary },
+  processingText: { ...typography.caption, color: colors.textSecondary },
   meta: { ...typography.caption, color: colors.textSecondary },
   gpsLink: { ...typography.caption, color: colors.primary, textDecorationLine: 'underline' },
   pirBadge: {

@@ -16,6 +16,7 @@ import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import type { PlantOrigin, Severity } from '../types/report';
+import type { PhotoExifMetadata } from '../utils/exif';
 import { parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -31,7 +32,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
   const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
-  const [photoUris, setPhotoUris] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<{ uri: string; exif: PhotoExifMetadata }[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [isPir, setIsPir] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,21 +53,21 @@ export function NewProblemScreen({ route, navigation }: Props) {
         setIsCameraOpen(true);
         return;
       }
-      const uris = await pickPhotoUris(source);
-      setPhotoUris((current) => [...current, ...uris]);
+      const picked = await pickPhotoUris(source);
+      setPhotos((current) => [...current, ...picked]);
     });
   }
 
-  function handleCapturePhoto(uri: string) {
-    setPhotoUris((current) => [...current, uri]);
+  function handleCapturePhoto(uri: string, exif: PhotoExifMetadata) {
+    setPhotos((current) => [...current, { uri, exif }]);
   }
 
   function handleRemovePhoto(index: number) {
-    setPhotoUris((current) => current.filter((_, i) => i !== index));
+    setPhotos((current) => current.filter((_, i) => i !== index));
   }
 
   async function handleSave() {
-    if (!title.trim() || !severity || !plantOrigin || photoUris.length < MIN_PHOTOS) {
+    if (!title.trim() || !severity || !plantOrigin || photos.length < MIN_PHOTOS) {
       Alert.alert('Faltan datos', `Elegí un título, severidad, planta de origen, y al menos ${MIN_PHOTOS} fotos.`);
       return;
     }
@@ -84,9 +85,9 @@ export function NewProblemScreen({ route, navigation }: Props) {
         isPir,
       });
       const settings = loadSettings();
-      for (let index = 0; index < photoUris.length; index += 1) {
-        const { fileName, localUri } = await savePhotoToReport(report.id, photoUris[index], index + 1, settings.compressionPreset);
-        addPhotoToReport(report.id, fileName, localUri);
+      for (let index = 0; index < photos.length; index += 1) {
+        const { fileName, localUri } = await savePhotoToReport(report.id, photos[index].uri, index + 1, settings.compressionPreset);
+        addPhotoToReport(report.id, fileName, localUri, photos[index].exif);
       }
       navigation.goBack();
     } finally {
@@ -96,10 +97,10 @@ export function NewProblemScreen({ route, navigation }: Props) {
 
   return (
     <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
-      <PhotoCaptureGrid photos={photoUris.map((uri) => ({ uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
+      <PhotoCaptureGrid photos={photos.map((p) => ({ uri: p.uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
       <InAppCamera
         visible={isCameraOpen}
-        currentCount={photoUris.length}
+        currentCount={photos.length}
         onCapture={handleCapturePhoto}
         onClose={() => setIsCameraOpen(false)}
       />
