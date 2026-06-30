@@ -17,6 +17,7 @@ export const colors = {
   severity6: '#E0B400',
   severity20: '#F0883C',
   severity50: '#E2222B',
+  severity100: '#9B1216',
   plantBR: '#3FAE6A',
   plantAR: '#4C8DFF',
 } as const;

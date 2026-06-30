@@ -1,9 +1,12 @@
+import { CheckboxField } from './CheckboxField';
 import { DictationInput } from './DictationInput';
 import { LabeledTextInput } from './LabeledTextInput';
 import { PirCheckbox } from './PirCheckbox';
 import { PlantOriginToggle } from './PlantOriginToggle';
+import { SegmentedSelector } from './SegmentedSelector';
 import { SeveritySelector } from './SeveritySelector';
-import type { PlantOrigin, Severity } from '../types/report';
+import { colors } from '../theme/tokens';
+import type { ObservationType, Severity } from '../types/report';
 
 type Props = {
   title: string;
@@ -12,8 +15,15 @@ type Props = {
   onSeverityChange: (severity: Severity) => void;
   isPir: boolean;
   onTogglePir: () => void;
-  plantOrigin: PlantOrigin | null;
-  onPlantOriginChange: (plant: PlantOrigin) => void;
+  isRepetitive: boolean;
+  onToggleRepetitive: () => void;
+  reportedByPlant: boolean;
+  onToggleReportedByPlant: () => void;
+  plantOrigin: string | null;
+  onPlantOriginChange: (plant: string) => void;
+  observationType: ObservationType | null;
+  onObservationTypeChange: (type: ObservationType) => void;
+  inspectionType: string | null;
   hoursText: string;
   onHoursChange: (text: string) => void;
   observations: string;
@@ -28,8 +38,15 @@ export function ObservationFields({
   onSeverityChange,
   isPir,
   onTogglePir,
+  isRepetitive,
+  onToggleRepetitive,
+  reportedByPlant,
+  onToggleReportedByPlant,
   plantOrigin,
   onPlantOriginChange,
+  observationType,
+  onObservationTypeChange,
+  inspectionType,
   hoursText,
   onHoursChange,
   observations,
@@ -50,7 +67,20 @@ export function ObservationFields({
       <DictationInput label="Título" value={title} onChangeText={onTitleChange} placeholder="Título breve de la observación" maxLength={80} />
       <SeveritySelector value={severity} onChange={handleSeverityChange} />
       <PirCheckbox value={!isObsSeverity && isPir} onToggle={onTogglePir} disabled={isObsSeverity} />
+      <CheckboxField label="Problema repetitivo" value={isRepetitive} onToggle={onToggleRepetitive} />
+      <CheckboxField label="Informado por planta" value={reportedByPlant} onToggle={onToggleReportedByPlant} />
       <PlantOriginToggle value={plantOrigin} onChange={onPlantOriginChange} />
+      {inspectionType === 'PPV' && (
+        <SegmentedSelector<ObservationType>
+          label="Tipo de observación"
+          value={observationType}
+          onChange={onObservationTypeChange}
+          options={[
+            { value: 'PAT', label: 'PAT', color: colors.primary },
+            { value: 'SD', label: 'SD', color: colors.primary },
+          ]}
+        />
+      )}
       <LabeledTextInput
         label="Horas"
         value={hoursText}

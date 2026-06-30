@@ -13,7 +13,12 @@ export function SeveritySelector({ value, onChange }: Props) {
       label="Severidad"
       value={value}
       onChange={onChange}
-      options={SEVERITIES.map((severity) => ({ value: severity, label: SEVERITY_LABELS[severity], color: SEVERITY_COLORS[severity] }))}
+      options={SEVERITIES.map((severity) => ({
+        value: severity,
+        label: SEVERITY_LABELS[severity],
+        color: SEVERITY_COLORS[severity],
+        badge: severity === '100' ? '🔥' : undefined,
+      }))}
     />
   );
 }

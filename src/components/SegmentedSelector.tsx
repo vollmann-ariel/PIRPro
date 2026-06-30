@@ -6,6 +6,7 @@ type Option<T extends string | number> = {
   value: T;
   label: string;
   color: string;
+  badge?: string;
 };
 
 type Props<T extends string | number> = {
@@ -32,6 +33,7 @@ export function SegmentedSelector<T extends string | number>({ label, options, v
               style={[styles.button, { borderColor: option.color }, selected && { backgroundColor: option.color }]}
             >
               <Text style={[styles.buttonText, { color: selected ? colors.textInverse : option.color }]}>{option.label}</Text>
+              {option.badge && <Text style={styles.badge}>{option.badge}</Text>}
             </Pressable>
           );
         })}
@@ -52,4 +54,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonText: { ...typography.subtitle },
+  badge: { position: 'absolute', top: -8, left: -6, fontSize: 14 },
 });

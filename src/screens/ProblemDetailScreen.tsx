@@ -8,6 +8,7 @@ import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { ObservationFields } from '../components/ObservationFields';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PhotoPreviewOverlay } from '../components/PhotoPreviewOverlay';
+import { getInspectionById } from '../db/inspections-repository';
 import {
   addPhotoToReport,
   deleteReportCompletely,
@@ -15,14 +16,17 @@ import {
   getReportById,
   listPhotosByReport,
   removePhotoFromReport,
+  setReportedByPlant,
+  setReportObservationType,
   setReportPir,
+  setReportRepetitive,
   updateReport,
 } from '../db/reports-repository';
 import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { SEVERITY_LABELS } from '../theme/severity';
-import { hasRequiredObservationFields, type PlantOrigin, type Report, type ReportPhoto, type Severity } from '../types/report';
+import { hasRequiredObservationFields, type ObservationType, type Report, type ReportPhoto, type Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
 import type { PhotoExifMetadata } from '../utils/exif';
 import { formatHours, parseHours } from '../utils/hours';
@@ -38,11 +42,12 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [report, setReport] = useState<Report | null>(null);
   const [photos, setPhotos] = useState<ReportPhoto[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [inspectionType, setInspectionType] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [observations, setObservations] = useState('');
   const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
-  const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
+  const [plantOrigin, setPlantOrigin] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
@@ -62,6 +67,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
       setHoursText(formatHours(current.hours));
       setSeverity(current.severity);
       setPlantOrigin(current.plantOrigin);
+      setInspectionType(getInspectionById(current.inspectionId)?.tipoPrueba ?? null);
     }
   }, [reportId]);
 
@@ -73,6 +79,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
 
   function handleSaveEdit() {
     if (!hasRequiredObservationFields(title, severity, plantOrigin)) return;
+    if (inspectionType === 'PPV' && report?.observationType == null) return;
     updateReport(reportId, { title: title.trim(), observations, severity: severity!, plantOrigin: plantOrigin!, hours: parseHours(hoursText) });
     setIsEditing(false);
     refresh();
@@ -81,6 +88,23 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   function handleTogglePir() {
     if (!report) return;
     setReportPir(reportId, !report.isPir);
+    setReport(getReportById(reportId));
+  }
+
+  function handleToggleRepetitive() {
+    if (!report) return;
+    setReportRepetitive(reportId, !report.isRepetitive);
+    setReport(getReportById(reportId));
+  }
+
+  function handleToggleReportedByPlant() {
+    if (!report) return;
+    setReportedByPlant(reportId, !report.reportedByPlant);
+    setReport(getReportById(reportId));
+  }
+
+  function handleObservationTypeChange(type: ObservationType) {
+    setReportObservationType(reportId, type);
     setReport(getReportById(reportId));
   }
 
@@ -184,8 +208,15 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
             onSeverityChange={setSeverity}
             isPir={report.isPir}
             onTogglePir={handleTogglePir}
+            isRepetitive={report.isRepetitive}
+            onToggleRepetitive={handleToggleRepetitive}
+            reportedByPlant={report.reportedByPlant}
+            onToggleReportedByPlant={handleToggleReportedByPlant}
             plantOrigin={plantOrigin}
             onPlantOriginChange={setPlantOrigin}
+            observationType={report.observationType}
+            onObservationTypeChange={handleObservationTypeChange}
+            inspectionType={inspectionType}
             hoursText={hoursText}
             onHoursChange={setHoursText}
             observations={observations}
@@ -209,7 +240,18 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
           <Text style={styles.meta}>
             Severidad {SEVERITY_LABELS[report.severity]} · Planta {report.plantOrigin}
             {report.hours != null ? ` · ${report.hours} h` : ''}
+            {report.observationType ? ` · ${report.observationType}` : ''}
           </Text>
+          {(report.isRepetitive || report.reportedByPlant) && (
+            <Text style={styles.meta}>
+              {[
+                report.isRepetitive ? 'Repetitivo' : null,
+                report.reportedByPlant ? 'Informado por planta' : null,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </Text>
+          )}
           <Text style={styles.meta}>📅 {new Date(report.createdAt).toLocaleString()}</Text>
           {report.latitude != null && report.longitude != null && (
             <Pressable accessibilityRole="link" accessibilityLabel="Abrir ubicación en el mapa" onPress={handleOpenMap}>

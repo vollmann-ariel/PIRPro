@@ -1,10 +1,8 @@
-export const SEVERITIES = ['Obs', '3', '6', '20', '50'] as const;
+export const SEVERITIES = ['Obs', '3', '6', '20', '50', '100'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
-export const PLANT_ORIGINS = ['BR', 'AR'] as const;
-export type PlantOrigin = (typeof PLANT_ORIGINS)[number];
-
 export type SyncStatus = 'local_only' | 'uploaded' | 'needs_reupload';
+export type ObservationType = 'PAT' | 'SD';
 
 export type Report = {
   id: string;
@@ -13,13 +11,16 @@ export type Report = {
   observations: string;
   createdAt: string;
   severity: Severity;
-  plantOrigin: PlantOrigin;
+  plantOrigin: string;
   hours: number | null;
   latitude: number | null;
   longitude: number | null;
   photoCount: number;
   syncStatus: SyncStatus;
   isPir: boolean;
+  isRepetitive: boolean;
+  reportedByPlant: boolean;
+  observationType: ObservationType | null;
 };
 
 export type ReportPhoto = {
@@ -37,6 +38,10 @@ export type ReportPhoto = {
 
 export type CompressionPreset = 'light' | 'medium' | 'high';
 
-export function hasRequiredObservationFields(title: string, severity: Severity | null, plantOrigin: PlantOrigin | null): boolean {
-  return title.trim().length > 0 && severity != null && plantOrigin != null;
+export function hasRequiredObservationFields(
+  title: string,
+  severity: Severity | null,
+  plantOrigin: string | null
+): boolean {
+  return title.trim().length > 0 && severity != null && plantOrigin != null && plantOrigin.trim().length > 0;
 }

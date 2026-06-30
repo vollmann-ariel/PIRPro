@@ -6,12 +6,13 @@ import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
 import { ObservationFields } from '../components/ObservationFields';
 import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
+import { getInspectionById } from '../db/inspections-repository';
 import { addPhotoToReport, createReport } from '../db/reports-repository';
 import { captureGpsNonBlocking, type Coordinates } from '../location/gps-capture';
 import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
-import { hasRequiredObservationFields, type PlantOrigin, type Severity } from '../types/report';
+import { hasRequiredObservationFields, type ObservationType, type Severity } from '../types/report';
 import type { PhotoExifMetadata } from '../utils/exif';
 import { parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
@@ -23,14 +24,18 @@ type Props = NativeStackScreenProps<RootStackParamList, 'NewProblem'>;
 
 export function NewProblemScreen({ route, navigation }: Props) {
   const { inspectionId } = route.params;
+  const [tipoPrueba] = useState(() => getInspectionById(inspectionId)?.tipoPrueba ?? null);
   const [title, setTitle] = useState('');
   const [observations, setObservations] = useState('');
   const [hoursText, setHoursText] = useState('');
   const [severity, setSeverity] = useState<Severity | null>(null);
-  const [plantOrigin, setPlantOrigin] = useState<PlantOrigin | null>(null);
+  const [plantOrigin, setPlantOrigin] = useState<string | null>(null);
+  const [isPir, setIsPir] = useState(false);
+  const [isRepetitive, setIsRepetitive] = useState(false);
+  const [reportedByPlant, setReportedByPlant] = useState(false);
+  const [observationType, setObservationType] = useState<ObservationType | null>(null);
   const [photos, setPhotos] = useState<{ uri: string; exif: PhotoExifMetadata }[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
-  const [isPir, setIsPir] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -63,8 +68,9 @@ export function NewProblemScreen({ route, navigation }: Props) {
   }
 
   async function handleSave() {
-    if (!hasRequiredObservationFields(title, severity, plantOrigin) || photos.length < MIN_PHOTOS) {
-      Alert.alert('Faltan datos', `Elegí un título, severidad, planta de origen, y al menos ${MIN_PHOTOS} fotos.`);
+    const needsObservationType = tipoPrueba === 'PPV' && observationType == null;
+    if (!hasRequiredObservationFields(title, severity, plantOrigin) || photos.length < MIN_PHOTOS || needsObservationType) {
+      Alert.alert('Faltan datos', `Elegí un título, severidad, planta de origen${tipoPrueba === 'PPV' ? ', tipo PAT/SD' : ''}, y al menos ${MIN_PHOTOS} fotos.`);
       return;
     }
     setIsSaving(true);
@@ -79,6 +85,9 @@ export function NewProblemScreen({ route, navigation }: Props) {
         latitude: coordinates?.latitude ?? null,
         longitude: coordinates?.longitude ?? null,
         isPir,
+        isRepetitive,
+        reportedByPlant,
+        observationType: tipoPrueba === 'PPV' ? observationType : null,
       });
       const settings = loadSettings();
       for (let index = 0; index < photos.length; index += 1) {
@@ -108,8 +117,15 @@ export function NewProblemScreen({ route, navigation }: Props) {
         onSeverityChange={setSeverity}
         isPir={isPir}
         onTogglePir={() => setIsPir((current) => !current)}
+        isRepetitive={isRepetitive}
+        onToggleRepetitive={() => setIsRepetitive((current) => !current)}
+        reportedByPlant={reportedByPlant}
+        onToggleReportedByPlant={() => setReportedByPlant((current) => !current)}
         plantOrigin={plantOrigin}
         onPlantOriginChange={setPlantOrigin}
+        observationType={observationType}
+        onObservationTypeChange={setObservationType}
+        inspectionType={tipoPrueba}
         hoursText={hoursText}
         onHoursChange={setHoursText}
         observations={observations}

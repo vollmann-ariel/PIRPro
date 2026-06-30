@@ -2,7 +2,7 @@ import { getDatabase } from './database';
 import { touchInspection } from './inspections-repository';
 import { deletePhotoFile, deleteReportDirectory } from '../storage/photo-storage';
 import { createId } from '../utils/ids';
-import type { PlantOrigin, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
+import type { ObservationType, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
 import type { PhotoExifMetadata } from '../utils/exif';
 
 type ReportRow = {
@@ -12,13 +12,16 @@ type ReportRow = {
   observations: string;
   created_at: string;
   severity: Severity;
-  plant_origin: PlantOrigin;
+  plant_origin: string;
   hours: number | null;
   latitude: number | null;
   longitude: number | null;
   photo_count: number;
   sync_status: SyncStatus;
   is_pir: number;
+  is_repetitive: number;
+  reported_by_plant: number;
+  observation_type: string | null;
 };
 
 type ReportPhotoRow = {
@@ -49,6 +52,9 @@ function toReport(row: ReportRow): Report {
     photoCount: row.photo_count,
     syncStatus: row.sync_status,
     isPir: row.is_pir === 1,
+    isRepetitive: row.is_repetitive === 1,
+    reportedByPlant: row.reported_by_plant === 1,
+    observationType: (row.observation_type as ObservationType | null) ?? null,
   };
 }
 
@@ -93,11 +99,14 @@ export type NewReportInput = {
   title: string;
   observations: string;
   severity: Severity;
-  plantOrigin: PlantOrigin;
+  plantOrigin: string;
   hours: number | null;
   latitude: number | null;
   longitude: number | null;
   isPir?: boolean;
+  isRepetitive?: boolean;
+  reportedByPlant?: boolean;
+  observationType?: ObservationType | null;
 };
 
 export function createReport(input: NewReportInput): Report {
@@ -115,10 +124,13 @@ export function createReport(input: NewReportInput): Report {
     photoCount: 0,
     syncStatus: 'local_only',
     isPir: input.isPir ?? false,
+    isRepetitive: input.isRepetitive ?? false,
+    reportedByPlant: input.reportedByPlant ?? false,
+    observationType: input.observationType ?? null,
   };
   getDatabase().runSync(
-    `INSERT INTO reports (id, inspection_id, title, observations, created_at, severity, plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO reports (id, inspection_id, title, observations, created_at, severity, plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir, is_repetitive, reported_by_plant, observation_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     report.id,
     report.inspectionId,
     report.title,
@@ -131,7 +143,10 @@ export function createReport(input: NewReportInput): Report {
     report.longitude,
     report.photoCount,
     report.syncStatus,
-    report.isPir ? 1 : 0
+    report.isPir ? 1 : 0,
+    report.isRepetitive ? 1 : 0,
+    report.reportedByPlant ? 1 : 0,
+    report.observationType ?? null
   );
   touchInspection(report.inspectionId);
   return report;
@@ -141,7 +156,7 @@ export type ReportEditInput = {
   title: string;
   observations: string;
   severity: Severity;
-  plantOrigin: PlantOrigin;
+  plantOrigin: string;
   hours: number | null;
 };
 
@@ -168,6 +183,42 @@ export function setReportPir(id: string, isPir: boolean): void {
   getDatabase().runSync(
     'UPDATE reports SET is_pir = ?, sync_status = ? WHERE id = ?',
     isPir ? 1 : 0,
+    nextSyncStatus,
+    id
+  );
+}
+
+export function setReportRepetitive(id: string, isRepetitive: boolean): void {
+  const existing = getReportById(id);
+  if (!existing) return;
+  const nextSyncStatus: SyncStatus = existing.syncStatus === 'local_only' ? 'local_only' : 'needs_reupload';
+  getDatabase().runSync(
+    'UPDATE reports SET is_repetitive = ?, sync_status = ? WHERE id = ?',
+    isRepetitive ? 1 : 0,
+    nextSyncStatus,
+    id
+  );
+}
+
+export function setReportedByPlant(id: string, value: boolean): void {
+  const existing = getReportById(id);
+  if (!existing) return;
+  const nextSyncStatus: SyncStatus = existing.syncStatus === 'local_only' ? 'local_only' : 'needs_reupload';
+  getDatabase().runSync(
+    'UPDATE reports SET reported_by_plant = ?, sync_status = ? WHERE id = ?',
+    value ? 1 : 0,
+    nextSyncStatus,
+    id
+  );
+}
+
+export function setReportObservationType(id: string, type: ObservationType | null): void {
+  const existing = getReportById(id);
+  if (!existing) return;
+  const nextSyncStatus: SyncStatus = existing.syncStatus === 'local_only' ? 'local_only' : 'needs_reupload';
+  getDatabase().runSync(
+    'UPDATE reports SET observation_type = ?, sync_status = ? WHERE id = ?',
+    type,
     nextSyncStatus,
     id
   );
