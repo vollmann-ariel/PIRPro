@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -78,8 +78,18 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   function handleSaveEdit() {
-    if (!hasRequiredObservationFields(title, severity, plantOrigin)) return;
-    if (inspectionType === 'PPV' && report?.observationType == null) return;
+    if (plantOrigin === '') {
+      Alert.alert('Falta la planta de origen', 'Escribí el nombre de la planta de origen.');
+      return;
+    }
+    if (!hasRequiredObservationFields(title, observations, severity, plantOrigin)) {
+      Alert.alert('Faltan datos', 'Completá el título, severidad, planta de origen y modo de falla.');
+      return;
+    }
+    if (inspectionType === 'PPV' && report?.observationType == null) {
+      Alert.alert('Falta el tipo', 'Elegí PAT o SD para esta observación PPV.');
+      return;
+    }
     updateReport(reportId, { title: title.trim(), observations, severity: severity!, plantOrigin: plantOrigin!, hours: parseHours(hoursText) });
     setIsEditing(false);
     refresh();

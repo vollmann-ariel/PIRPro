@@ -68,9 +68,13 @@ export function NewProblemScreen({ route, navigation }: Props) {
   }
 
   async function handleSave() {
+    if (plantOrigin === '') {
+      Alert.alert('Falta la planta de origen', 'Escribí el nombre de la planta de origen.');
+      return;
+    }
     const needsObservationType = tipoPrueba === 'PPV' && observationType == null;
-    if (!hasRequiredObservationFields(title, severity, plantOrigin) || photos.length < MIN_PHOTOS || needsObservationType) {
-      Alert.alert('Faltan datos', `Elegí un título, severidad, planta de origen${tipoPrueba === 'PPV' ? ', tipo PAT/SD' : ''}, y al menos ${MIN_PHOTOS} fotos.`);
+    if (!hasRequiredObservationFields(title, observations, severity, plantOrigin) || photos.length < MIN_PHOTOS || needsObservationType) {
+      Alert.alert('Faltan datos', `Completá el título, severidad, planta de origen, modo de falla${tipoPrueba === 'PPV' ? ', tipo PAT/SD' : ''} y al menos ${MIN_PHOTOS} fotos.`);
       return;
     }
     setIsSaving(true);

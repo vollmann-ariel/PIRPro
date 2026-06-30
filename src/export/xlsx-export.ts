@@ -90,5 +90,5 @@ export function buildInspectionXlsx(
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
 
-  return XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array;
+  return new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as number[]);
 }

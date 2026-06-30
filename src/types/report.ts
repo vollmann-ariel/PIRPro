@@ -40,8 +40,15 @@ export type CompressionPreset = 'light' | 'medium' | 'high';
 
 export function hasRequiredObservationFields(
   title: string,
+  observations: string,
   severity: Severity | null,
   plantOrigin: string | null
 ): boolean {
-  return title.trim().length > 0 && severity != null && plantOrigin != null && plantOrigin.trim().length > 0;
+  return (
+    title.trim().length > 0 &&
+    observations.trim().length > 0 &&
+    severity != null &&
+    plantOrigin != null &&
+    plantOrigin.trim().length > 0
+  );
 }

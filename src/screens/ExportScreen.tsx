@@ -44,7 +44,7 @@ export function ExportScreen({ route }: Props) {
       <Text style={styles.meta}>{reports.length} observaciones registradas</Text>
 
       <Pressable style={[styles.button, isExporting && styles.buttonDisabled]} disabled={isExporting || reports.length === 0} onPress={handleExport}>
-        <Text style={styles.buttonText}>{isExporting ? 'Generando…' : 'Exportar local (CSV + fotos)'}</Text>
+        <Text style={styles.buttonText}>{isExporting ? 'Generando…' : 'Exportar local (Excel + fotos)'}</Text>
       </Pressable>
 
       {reports.length === 0 && <Text style={styles.meta}>Agregá al menos una observación antes de exportar.</Text>}
