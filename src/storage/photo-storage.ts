@@ -1,6 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import { compressPhoto } from './photo-compression';
+import { createId } from '../utils/ids';
 import type { CompressionPreset } from '../types/report';
 
 function reportDirectory(reportId: string): Directory {
@@ -10,7 +11,6 @@ function reportDirectory(reportId: string): Directory {
 export async function savePhotoToReport(
   reportId: string,
   sourceUri: string,
-  photoIndex: number,
   preset: CompressionPreset
 ): Promise<{ fileName: string; localUri: string }> {
   const directory = reportDirectory(reportId);
@@ -18,11 +18,8 @@ export async function savePhotoToReport(
     directory.create({ intermediates: true });
   }
   const compressedUri = await compressPhoto(sourceUri, preset);
-  const fileName = `photo_${photoIndex}.jpg`;
+  const fileName = `photo_${createId()}.jpg`;
   const destination = new File(directory, fileName);
-  if (destination.exists) {
-    destination.delete();
-  }
   const compressedFile = new File(compressedUri);
   await compressedFile.copy(destination);
   return { fileName, localUri: destination.uri };

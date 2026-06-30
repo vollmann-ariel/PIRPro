@@ -2,7 +2,8 @@ export const SEVERITIES = ['Obs', '3', '6', '20', '50', '100'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 
 export type SyncStatus = 'local_only' | 'uploaded' | 'needs_reupload';
-export type ObservationType = 'PAT' | 'SD';
+export type ObservationType = 'PAT' | 'SD' | 'OBS';
+export type ProductScope = 'New Product' | 'Current Product';
 
 export type Report = {
   id: string;
@@ -21,6 +22,7 @@ export type Report = {
   isRepetitive: boolean;
   reportedByPlant: boolean;
   observationType: ObservationType | null;
+  productScope: ProductScope | null;
 };
 
 export type ReportPhoto = {

@@ -30,7 +30,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
   useFocusEffect(refresh);
 
   function handleDelete(report: Report) {
-    confirmDestructive('Eliminar observación', 'Esta acción no se puede deshacer. No se borra nada en OneDrive.', 'Eliminar', () => {
+    confirmDestructive('Eliminar observación', 'Esta acción no se puede deshacer.', 'Eliminar', () => {
       deleteReportCompletely(report.id);
       refresh();
     });

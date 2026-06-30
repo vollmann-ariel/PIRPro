@@ -72,7 +72,7 @@ export function InspectionPickerScreen({ navigation }: Props) {
     const reports = listReportsByInspection(inspection.id);
     confirmDestructive(
       'Eliminar reporte completo',
-      `Se van a borrar las ${reports.length} observaciones registradas para este VIN. Esta acción no se puede deshacer. No se borra nada en OneDrive.`,
+      `Se van a borrar las ${reports.length} observaciones registradas para este VIN. Esta acción no se puede deshacer.`,
       'Eliminar todo',
       () => {
         for (const report of reports) {

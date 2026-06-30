@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { colors, radius, spacing, typography } from '../theme/tokens';
 
-const PLANT_PRESETS = ['Brasil', 'Argentina', 'Turquía', 'Bélgica', 'USA'] as const;
+const PLANT_PRESETS = ['Brasil', 'Argentina', 'Turquía', 'Bélgica', 'USA', 'India'] as const;
 
 type Props = {
   value: string | null;

@@ -6,7 +6,7 @@ import { PlantOriginToggle } from './PlantOriginToggle';
 import { SegmentedSelector } from './SegmentedSelector';
 import { SeveritySelector } from './SeveritySelector';
 import { colors } from '../theme/tokens';
-import type { ObservationType, Severity } from '../types/report';
+import type { ObservationType, ProductScope, Severity } from '../types/report';
 
 type Props = {
   title: string;
@@ -24,6 +24,8 @@ type Props = {
   observationType: ObservationType | null;
   onObservationTypeChange: (type: ObservationType) => void;
   inspectionType: string | null;
+  productScope: ProductScope | null;
+  onProductScopeChange: (scope: ProductScope) => void;
   hoursText: string;
   onHoursChange: (text: string) => void;
   observations: string;
@@ -47,6 +49,8 @@ export function ObservationFields({
   observationType,
   onObservationTypeChange,
   inspectionType,
+  productScope,
+  onProductScopeChange,
   hoursText,
   onHoursChange,
   observations,
@@ -78,9 +82,19 @@ export function ObservationFields({
           options={[
             { value: 'PAT', label: 'PAT', color: colors.primary },
             { value: 'SD', label: 'SD', color: colors.primary },
+            { value: 'OBS', label: 'OBS', color: colors.primary },
           ]}
         />
       )}
+      <SegmentedSelector<ProductScope>
+        label="Ámbito"
+        value={productScope}
+        onChange={onProductScopeChange}
+        options={[
+          { value: 'New Product', label: 'New Product', color: colors.primary },
+          { value: 'Current Product', label: 'Current Product', color: colors.primary },
+        ]}
+      />
       <LabeledTextInput
         label="Horas"
         value={hoursText}

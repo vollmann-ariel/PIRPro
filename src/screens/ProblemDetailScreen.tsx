@@ -12,13 +12,13 @@ import { getInspectionById } from '../db/inspections-repository';
 import {
   addPhotoToReport,
   deleteReportCompletely,
-  getNextPhotoIndex,
   getReportById,
   listPhotosByReport,
   removePhotoFromReport,
   setReportedByPlant,
   setReportObservationType,
   setReportPir,
+  setReportProductScope,
   setReportRepetitive,
   updateReport,
 } from '../db/reports-repository';
@@ -26,7 +26,7 @@ import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { SEVERITY_LABELS } from '../theme/severity';
-import { hasRequiredObservationFields, type ObservationType, type Report, type ReportPhoto, type Severity } from '../types/report';
+import { hasRequiredObservationFields, type ObservationType, type ProductScope, type Report, type ReportPhoto, type Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
 import type { PhotoExifMetadata } from '../utils/exif';
 import { formatHours, parseHours } from '../utils/hours';
@@ -118,6 +118,11 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     setReport(getReportById(reportId));
   }
 
+  function handleProductScopeChange(scope: ProductScope) {
+    setReportProductScope(reportId, scope);
+    setReport(getReportById(reportId));
+  }
+
   function handleAddPhoto() {
     if (isProcessingPhoto) return;
     promptPhotoSource(async (source) => {
@@ -130,11 +135,9 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
       setIsProcessingPhoto(true);
       try {
         const settings = loadSettings();
-        let nextIndex = getNextPhotoIndex(reportId);
         for (const { uri, exif } of picked) {
-          const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
+          const { fileName, localUri } = await savePhotoToReport(reportId, uri, settings.compressionPreset);
           addPhotoToReport(reportId, fileName, localUri, exif);
-          nextIndex += 1;
         }
         refresh();
       } finally {
@@ -147,8 +150,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     setIsProcessingPhoto(true);
     try {
       const settings = loadSettings();
-      const nextIndex = getNextPhotoIndex(reportId);
-      const { fileName, localUri } = await savePhotoToReport(reportId, uri, nextIndex, settings.compressionPreset);
+      const { fileName, localUri } = await savePhotoToReport(reportId, uri, settings.compressionPreset);
       addPhotoToReport(reportId, fileName, localUri, exif);
       refresh();
     } finally {
@@ -227,6 +229,8 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
             observationType={report.observationType}
             onObservationTypeChange={handleObservationTypeChange}
             inspectionType={inspectionType}
+            productScope={report.productScope}
+            onProductScopeChange={handleProductScopeChange}
             hoursText={hoursText}
             onHoursChange={setHoursText}
             observations={observations}

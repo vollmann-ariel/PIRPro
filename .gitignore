@@ -135,3 +135,5 @@ CLAUDE.local.md
 .claude/skills/ship/SKILL.md
 .claude/skills/tdd/SKILL.md
 .claude/skills/test-writer/SKILL.md
+toDo.txt
+.gitignore

@@ -33,7 +33,8 @@ export function getDatabase(): SQLiteDatabase {
         is_pir INTEGER NOT NULL DEFAULT 0,
         is_repetitive INTEGER NOT NULL DEFAULT 0,
         reported_by_plant INTEGER NOT NULL DEFAULT 0,
-        observation_type TEXT CHECK (observation_type IN ('PAT','SD'))
+        observation_type TEXT CHECK (observation_type IN ('PAT','SD','OBS')),
+        product_scope TEXT CHECK (product_scope IN ('New Product','Current Product'))
       );
 
       CREATE TABLE IF NOT EXISTS report_photos (
@@ -86,6 +87,9 @@ function runMigrations(database: SQLiteDatabase): void {
   }
   if (!columnNames.has('observation_type')) {
     database.execSync('ALTER TABLE reports ADD COLUMN observation_type TEXT;');
+  }
+  if (!columnNames.has('product_scope')) {
+    database.execSync('ALTER TABLE reports ADD COLUMN product_scope TEXT;');
   }
 
   const photoColumns = database.getAllSync<{ name: string }>('PRAGMA table_info(report_photos)');

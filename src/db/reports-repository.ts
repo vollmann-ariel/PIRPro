@@ -2,7 +2,7 @@ import { getDatabase } from './database';
 import { touchInspection } from './inspections-repository';
 import { deletePhotoFile, deleteReportDirectory } from '../storage/photo-storage';
 import { createId } from '../utils/ids';
-import type { ObservationType, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
+import type { ObservationType, ProductScope, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
 import type { PhotoExifMetadata } from '../utils/exif';
 
 type ReportRow = {
@@ -22,6 +22,7 @@ type ReportRow = {
   is_repetitive: number;
   reported_by_plant: number;
   observation_type: string | null;
+  product_scope: string | null;
 };
 
 type ReportPhotoRow = {
@@ -55,6 +56,7 @@ function toReport(row: ReportRow): Report {
     isRepetitive: row.is_repetitive === 1,
     reportedByPlant: row.reported_by_plant === 1,
     observationType: (row.observation_type as ObservationType | null) ?? null,
+    productScope: (row.product_scope as ProductScope | null) ?? null,
   };
 }
 
@@ -107,6 +109,7 @@ export type NewReportInput = {
   isRepetitive?: boolean;
   reportedByPlant?: boolean;
   observationType?: ObservationType | null;
+  productScope?: ProductScope | null;
 };
 
 export function createReport(input: NewReportInput): Report {
@@ -127,10 +130,11 @@ export function createReport(input: NewReportInput): Report {
     isRepetitive: input.isRepetitive ?? false,
     reportedByPlant: input.reportedByPlant ?? false,
     observationType: input.observationType ?? null,
+    productScope: input.productScope ?? null,
   };
   getDatabase().runSync(
-    `INSERT INTO reports (id, inspection_id, title, observations, created_at, severity, plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir, is_repetitive, reported_by_plant, observation_type)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO reports (id, inspection_id, title, observations, created_at, severity, plant_origin, hours, latitude, longitude, photo_count, sync_status, is_pir, is_repetitive, reported_by_plant, observation_type, product_scope)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     report.id,
     report.inspectionId,
     report.title,
@@ -146,7 +150,8 @@ export function createReport(input: NewReportInput): Report {
     report.isPir ? 1 : 0,
     report.isRepetitive ? 1 : 0,
     report.reportedByPlant ? 1 : 0,
-    report.observationType ?? null
+    report.observationType ?? null,
+    report.productScope ?? null
   );
   touchInspection(report.inspectionId);
   return report;
@@ -212,6 +217,18 @@ export function setReportedByPlant(id: string, value: boolean): void {
   );
 }
 
+export function setReportProductScope(id: string, scope: ProductScope | null): void {
+  const existing = getReportById(id);
+  if (!existing) return;
+  const nextSyncStatus: SyncStatus = existing.syncStatus === 'local_only' ? 'local_only' : 'needs_reupload';
+  getDatabase().runSync(
+    'UPDATE reports SET product_scope = ?, sync_status = ? WHERE id = ?',
+    scope,
+    nextSyncStatus,
+    id
+  );
+}
+
 export function setReportObservationType(id: string, type: ObservationType | null): void {
   const existing = getReportById(id);
   if (!existing) return;
@@ -222,21 +239,6 @@ export function setReportObservationType(id: string, type: ObservationType | nul
     nextSyncStatus,
     id
   );
-}
-
-export function getNextPhotoIndex(reportId: string): number {
-  const rows = getDatabase().getAllSync<{ file_name: string }>(
-    'SELECT file_name FROM report_photos WHERE report_id = ?',
-    reportId
-  );
-  let max = 0;
-  for (const row of rows) {
-    const match = /^photo_(\d+)\.jpg$/.exec(row.file_name);
-    if (match) {
-      max = Math.max(max, Number(match[1]));
-    }
-  }
-  return max + 1;
 }
 
 export function deleteReport(id: string): void {
