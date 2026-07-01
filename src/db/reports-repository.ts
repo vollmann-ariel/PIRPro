@@ -3,7 +3,6 @@ import { touchInspection } from './inspections-repository';
 import { deletePhotoFile, deleteReportDirectory } from '../storage/photo-storage';
 import { createId } from '../utils/ids';
 import type { ObservationType, ProductScope, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
-import type { PhotoExifMetadata } from '../utils/exif';
 
 type ReportRow = {
   id: string;
@@ -251,16 +250,16 @@ export function deleteReportCompletely(id: string): void {
   deleteReportDirectory(id);
 }
 
-export function addPhotoToReport(reportId: string, fileName: string, localUri: string, exif?: PhotoExifMetadata): ReportPhoto {
+export function addPhotoToReport(reportId: string, fileName: string, localUri: string): ReportPhoto {
   const photo: ReportPhoto = {
     id: createId(),
     reportId,
     fileName,
     localUri,
     takenAt: new Date().toISOString(),
-    exifTakenAt: exif?.takenAt ?? null,
-    latitude: exif?.latitude ?? null,
-    longitude: exif?.longitude ?? null,
+    exifTakenAt: null,
+    latitude: null,
+    longitude: null,
     uploadedToOnedrive: false,
     pendingRemoteDelete: false,
   };

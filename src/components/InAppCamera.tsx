@@ -4,12 +4,11 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radius, spacing, typography } from '../theme/tokens';
-import { extractPhotoExif, type PhotoExifMetadata } from '../utils/exif';
 
 type Props = {
   visible: boolean;
   currentCount: number;
-  onCapture: (uri: string, exif: PhotoExifMetadata) => void;
+  onCapture: (uri: string) => void;
   onClose: () => void;
 };
 
@@ -28,8 +27,8 @@ export function InAppCamera({ visible, currentCount, onCapture, onClose }: Props
     if (isCapturing || !isCameraReady) return;
     setIsCapturing(true);
     try {
-      const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8, exif: true });
-      if (photo) onCapture(photo.uri, extractPhotoExif(photo.exif ?? null));
+      const photo = await cameraRef.current?.takePictureAsync({ quality: 0.8 });
+      if (photo) onCapture(photo.uri);
     } finally {
       setIsCapturing(false);
     }

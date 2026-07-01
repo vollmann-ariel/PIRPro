@@ -13,7 +13,6 @@ import { loadSettings } from '../settings/settings-store';
 import { savePhotoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { hasRequiredObservationFields, type ObservationType, type ProductScope, type Severity } from '../types/report';
-import type { PhotoExifMetadata } from '../utils/exif';
 import { parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -35,7 +34,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
   const [reportedByPlant, setReportedByPlant] = useState(false);
   const [observationType, setObservationType] = useState<ObservationType | null>(null);
   const [productScope, setProductScope] = useState<ProductScope | null>(null);
-  const [photos, setPhotos] = useState<{ uri: string; exif: PhotoExifMetadata }[]>([]);
+  const [photos, setPhotos] = useState<{ uri: string }[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -60,8 +59,8 @@ export function NewProblemScreen({ route, navigation }: Props) {
     });
   }
 
-  function handleCapturePhoto(uri: string, exif: PhotoExifMetadata) {
-    setPhotos((current) => [...current, { uri, exif }]);
+  function handleCapturePhoto(uri: string) {
+    setPhotos((current) => [...current, { uri }]);
   }
 
   function handleRemovePhoto(index: number) {
@@ -98,7 +97,7 @@ export function NewProblemScreen({ route, navigation }: Props) {
       const settings = loadSettings();
       for (let index = 0; index < photos.length; index += 1) {
         const { fileName, localUri } = await savePhotoToReport(report.id, photos[index].uri, settings.compressionPreset);
-        addPhotoToReport(report.id, fileName, localUri, photos[index].exif);
+        addPhotoToReport(report.id, fileName, localUri);
       }
       navigation.goBack();
     } finally {

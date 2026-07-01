@@ -28,7 +28,6 @@ import { colors, radius, spacing, typography } from '../theme/tokens';
 import { SEVERITY_LABELS } from '../theme/severity';
 import { hasRequiredObservationFields, type ObservationType, type ProductScope, type Report, type ReportPhoto, type Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
-import type { PhotoExifMetadata } from '../utils/exif';
 import { formatHours, parseHours } from '../utils/hours';
 import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
@@ -135,9 +134,9 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
       setIsProcessingPhoto(true);
       try {
         const settings = loadSettings();
-        for (const { uri, exif } of picked) {
+        for (const { uri } of picked) {
           const { fileName, localUri } = await savePhotoToReport(reportId, uri, settings.compressionPreset);
-          addPhotoToReport(reportId, fileName, localUri, exif);
+          addPhotoToReport(reportId, fileName, localUri);
         }
         refresh();
       } finally {
@@ -146,12 +145,12 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     });
   }
 
-  async function handleCapturePhoto(uri: string, exif: PhotoExifMetadata) {
+  async function handleCapturePhoto(uri: string) {
     setIsProcessingPhoto(true);
     try {
       const settings = loadSettings();
       const { fileName, localUri } = await savePhotoToReport(reportId, uri, settings.compressionPreset);
-      addPhotoToReport(reportId, fileName, localUri, exif);
+      addPhotoToReport(reportId, fileName, localUri);
       refresh();
     } finally {
       setIsProcessingPhoto(false);
@@ -183,12 +182,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     });
   }
 
-  const previewPhotos = photos.map((photo) => ({
-    uri: photo.localUri,
-    exifTakenAt: photo.exifTakenAt,
-    latitude: photo.latitude,
-    longitude: photo.longitude,
-  }));
+  const previewPhotos = photos.map((photo) => ({ uri: photo.localUri }));
   const previewPhoto = previewIndex != null ? previewPhotos[previewIndex] ?? null : null;
 
   return (
