@@ -16,13 +16,14 @@ const BASE_HEADERS = [
   'Repetitivo',
   'Informado por planta',
   'Tipo observación',
+  'Ámbito',
   'Latitud',
   'Longitud',
   'Cant. fotos',
   'Modo de falla',
 ];
 
-const BASE_COL_WIDTHS = [14, 18, 36, 20, 40, 10, 18, 8, 6, 12, 22, 16, 12, 12, 12, 50];
+const BASE_COL_WIDTHS = [14, 18, 36, 20, 40, 10, 18, 8, 6, 12, 22, 16, 16, 12, 12, 12, 50];
 
 export function buildInspectionXlsx(
   inspection: Inspection,
@@ -56,6 +57,7 @@ export function buildInspectionXlsx(
       report.isRepetitive ? 'Sí' : 'No',
       report.reportedByPlant ? 'Sí' : 'No',
       report.observationType ?? '',
+      report.productScope ?? '',
       report.latitude ?? '',
       report.longitude ?? '',
       report.photoCount,
