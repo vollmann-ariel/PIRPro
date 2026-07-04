@@ -1,7 +1,7 @@
 import XLSX from 'xlsx';
 
 import type { Inspection } from '../types/inspection';
-import type { Report, ReportPhoto } from '../types/report';
+import type { Report, ReportPhoto, ReportVideo } from '../types/report';
 
 const BASE_HEADERS = [
   'Tipo de prueba',
@@ -20,29 +20,41 @@ const BASE_HEADERS = [
   'Latitud',
   'Longitud',
   'Cant. fotos',
+  'Cant. videos',
   'Modo de falla',
 ];
 
-const BASE_COL_WIDTHS = [14, 18, 36, 20, 40, 10, 18, 8, 6, 12, 22, 16, 16, 12, 12, 12, 50];
+const BASE_COL_WIDTHS = [14, 18, 36, 20, 40, 10, 18, 8, 6, 12, 22, 16, 16, 12, 12, 12, 12, 50];
 
 export function buildInspectionXlsx(
   inspection: Inspection,
   reports: Report[],
   photosByReportId: Map<string, ReportPhoto[]>,
+  videosByReportId: Map<string, ReportVideo[]>,
   reportFolders: Map<string, string>
 ): Uint8Array {
   const maxPhotos = reports.reduce(
     (max, report) => Math.max(max, photosByReportId.get(report.id)?.length ?? 0),
     0
   );
+  const maxVideos = reports.reduce(
+    (max, report) => Math.max(max, videosByReportId.get(report.id)?.length ?? 0),
+    0
+  );
   const photoHeaders = Array.from({ length: maxPhotos }, (_, i) => `Foto ${i + 1}`);
-  const headers = [...BASE_HEADERS, ...photoHeaders];
+  const videoHeaders = Array.from({ length: maxVideos }, (_, i) => `Video ${i + 1}`);
+  const headers = [...BASE_HEADERS, ...photoHeaders, ...videoHeaders];
 
   const rows = reports.map((report) => {
     const photos = photosByReportId.get(report.id) ?? [];
+    const videos = videosByReportId.get(report.id) ?? [];
     const folderName = reportFolders.get(report.id) ?? report.id;
+
     const photoCells = photos.map((_, i) => `${folderName}/foto_${i + 1}.jpg`);
     while (photoCells.length < maxPhotos) photoCells.push('');
+
+    const videoCells = videos.map((_, i) => `${folderName}/video_${i + 1}.mp4`);
+    while (videoCells.length < maxVideos) videoCells.push('');
 
     return [
       inspection.tipoPrueba,
@@ -61,8 +73,10 @@ export function buildInspectionXlsx(
       report.latitude ?? '',
       report.longitude ?? '',
       report.photoCount,
+      report.videoCount,
       report.observations,
       ...photoCells,
+      ...videoCells,
     ];
   });
 
@@ -83,9 +97,24 @@ export function buildInspectionXlsx(
     });
   });
 
+  // Add hyperlinks to video cells
+  reports.forEach((report, rowIndex) => {
+    const videos = videosByReportId.get(report.id) ?? [];
+    const folderName = reportFolders.get(report.id) ?? report.id;
+    videos.forEach((_, videoIndex) => {
+      const col = BASE_HEADERS.length + maxPhotos + videoIndex;
+      const cellAddr = XLSX.utils.encode_cell({ r: rowIndex + 1, c: col });
+      const target = `${folderName}/video_${videoIndex + 1}.mp4`;
+      if (ws[cellAddr]) {
+        ws[cellAddr].l = { Target: target };
+      }
+    });
+  });
+
   const colWidths = [
     ...BASE_COL_WIDTHS,
     ...Array.from({ length: maxPhotos }, () => 50),
+    ...Array.from({ length: maxVideos }, () => 50),
   ];
   ws['!cols'] = colWidths.map((wch) => ({ wch }));
 

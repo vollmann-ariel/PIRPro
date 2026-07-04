@@ -5,16 +5,20 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
+import { MediaCaptureGrid } from '../components/MediaCaptureGrid';
 import { ObservationFields } from '../components/ObservationFields';
-import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
 import { PhotoPreviewOverlay } from '../components/PhotoPreviewOverlay';
+import { VideoPreviewOverlay } from '../components/VideoPreviewOverlay';
 import { getInspectionById } from '../db/inspections-repository';
 import {
   addPhotoToReport,
+  addVideoToReport,
   deleteReportCompletely,
   getReportById,
   listPhotosByReport,
+  listVideosByReport,
   removePhotoFromReport,
+  removeVideoFromReport,
   setReportedByPlant,
   setReportObservationType,
   setReportPir,
@@ -23,23 +27,25 @@ import {
   updateReport,
 } from '../db/reports-repository';
 import { loadSettings } from '../settings/settings-store';
-import { savePhotoToReport } from '../storage/photo-storage';
+import { savePhotoToReport, saveVideoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { SEVERITY_LABELS } from '../theme/severity';
-import { hasRequiredObservationFields, type ObservationType, type ProductScope, type Report, type ReportPhoto, type Severity } from '../types/report';
+import { hasRequiredObservationFields, type ObservationType, type ProductScope, type Report, type ReportPhoto, type ReportVideo, type Severity } from '../types/report';
 import { confirmDestructive } from '../utils/confirm';
 import { formatHours, parseHours } from '../utils/hours';
-import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
+import { pickPhotoUris, pickVideoUri, promptPhotoSource, promptVideoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProblemDetail'>;
 
 const MIN_PHOTOS = 3;
+const MAX_VIDEOS = 3;
 
 export function ProblemDetailScreen({ route, navigation }: Props) {
   const { reportId } = route.params;
   const [report, setReport] = useState<Report | null>(null);
   const [photos, setPhotos] = useState<ReportPhoto[]>([]);
+  const [videos, setVideos] = useState<ReportVideo[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [inspectionType, setInspectionType] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -48,8 +54,9 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [plantOrigin, setPlantOrigin] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [isProcessingMedia, setIsProcessingMedia] = useState(false);
+  const [previewPhotoIndex, setPreviewPhotoIndex] = useState<number | null>(null);
+  const [previewVideoIndex, setPreviewVideoIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   function scrollToEnd() {
@@ -60,6 +67,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     const current = getReportById(reportId);
     setReport(current);
     setPhotos(listPhotosByReport(reportId));
+    setVideos(listVideosByReport(reportId));
     if (current) {
       setTitle(current.title);
       setObservations(current.observations);
@@ -123,7 +131,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   function handleAddPhoto() {
-    if (isProcessingPhoto) return;
+    if (isProcessingMedia) return;
     promptPhotoSource(async (source) => {
       if (source === 'camera') {
         setIsCameraOpen(true);
@@ -131,7 +139,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
       }
       const picked = await pickPhotoUris(source);
       if (picked.length === 0) return;
-      setIsProcessingPhoto(true);
+      setIsProcessingMedia(true);
       try {
         const settings = loadSettings();
         for (const { uri } of picked) {
@@ -140,25 +148,37 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         }
         refresh();
       } finally {
-        setIsProcessingPhoto(false);
+        setIsProcessingMedia(false);
       }
     });
   }
 
   async function handleCapturePhoto(uri: string) {
-    setIsProcessingPhoto(true);
+    setIsProcessingMedia(true);
     try {
       const settings = loadSettings();
       const { fileName, localUri } = await savePhotoToReport(reportId, uri, settings.compressionPreset);
       addPhotoToReport(reportId, fileName, localUri);
       refresh();
     } finally {
-      setIsProcessingPhoto(false);
+      setIsProcessingMedia(false);
     }
   }
 
-  function handleClosePreview() {
-    setPreviewIndex(null);
+  function handleAddVideo() {
+    if (isProcessingMedia || videos.length >= MAX_VIDEOS) return;
+    promptVideoSource(async (source) => {
+      const picked = await pickVideoUri(source);
+      if (!picked) return;
+      setIsProcessingMedia(true);
+      try {
+        const { fileName, localUri } = await saveVideoToReport(reportId, picked.uri);
+        addVideoToReport(reportId, fileName, localUri);
+        refresh();
+      } finally {
+        setIsProcessingMedia(false);
+      }
+    });
   }
 
   function handleRemovePhoto(index: number) {
@@ -166,6 +186,15 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
     if (!photo) return;
     confirmDestructive('Quitar foto', '¿Seguro que querés quitar esta foto de la observación?', 'Quitar', () => {
       removePhotoFromReport(photo);
+      refresh();
+    });
+  }
+
+  function handleRemoveVideo(index: number) {
+    const video = videos[index];
+    if (!video) return;
+    confirmDestructive('Quitar video', '¿Seguro que querés quitar este video de la observación?', 'Quitar', () => {
+      removeVideoFromReport(video);
       refresh();
     });
   }
@@ -183,104 +212,110 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   }
 
   const previewPhotos = photos.map((photo) => ({ uri: photo.localUri }));
-  const previewPhoto = previewIndex != null ? previewPhotos[previewIndex] ?? null : null;
+  const previewPhoto = previewPhotoIndex != null ? previewPhotos[previewPhotoIndex] ?? null : null;
+  const previewVideoUri = previewVideoIndex != null ? (videos[previewVideoIndex]?.localUri ?? null) : null;
 
   return (
     <View style={styles.flex}>
       <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
-      <PhotoCaptureGrid
-        photos={previewPhotos}
-        minRequired={MIN_PHOTOS}
-        editable={isEditing}
-        showCounter={false}
-        onAddPress={handleAddPhoto}
-        onRemove={handleRemovePhoto}
-        onPreview={setPreviewIndex}
-      />
-      {isProcessingPhoto && <Text style={styles.processingText}>Procesando foto…</Text>}
-      <InAppCamera
-        visible={isCameraOpen}
-        currentCount={photos.length}
-        onCapture={handleCapturePhoto}
-        onClose={() => setIsCameraOpen(false)}
-      />
+        <MediaCaptureGrid
+          photos={previewPhotos}
+          videos={videos.map((v) => ({ uri: v.localUri }))}
+          minPhotos={MIN_PHOTOS}
+          editable={isEditing}
+          showCounter={false}
+          onAddPhotoPress={handleAddPhoto}
+          onAddVideoPress={handleAddVideo}
+          onRemovePhoto={handleRemovePhoto}
+          onRemoveVideo={handleRemoveVideo}
+          onPreviewPhoto={setPreviewPhotoIndex}
+          onPreviewVideo={setPreviewVideoIndex}
+        />
+        {isProcessingMedia && <Text style={styles.processingText}>Procesando…</Text>}
+        <InAppCamera
+          visible={isCameraOpen}
+          currentCount={photos.length}
+          onCapture={handleCapturePhoto}
+          onClose={() => setIsCameraOpen(false)}
+        />
 
-      {isEditing ? (
-        <>
-          <ObservationFields
-            title={title}
-            onTitleChange={setTitle}
-            severity={severity}
-            onSeverityChange={setSeverity}
-            isPir={report.isPir}
-            onTogglePir={handleTogglePir}
-            isRepetitive={report.isRepetitive}
-            onToggleRepetitive={handleToggleRepetitive}
-            reportedByPlant={report.reportedByPlant}
-            onToggleReportedByPlant={handleToggleReportedByPlant}
-            plantOrigin={plantOrigin}
-            onPlantOriginChange={setPlantOrigin}
-            observationType={report.observationType}
-            onObservationTypeChange={handleObservationTypeChange}
-            inspectionType={inspectionType}
-            productScope={report.productScope}
-            onProductScopeChange={handleProductScopeChange}
-            hoursText={hoursText}
-            onHoursChange={setHoursText}
-            observations={observations}
-            onObservationsChange={setObservations}
-            onFieldFocus={scrollToEnd}
-          />
-          <View style={styles.actionRow}>
-            <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(false)}>
-              <Text style={styles.secondaryButtonText}>Cancelar</Text>
-            </Pressable>
-            <Pressable style={styles.primaryButton} onPress={handleSaveEdit}>
-              <Text style={styles.primaryButtonText}>Guardar</Text>
-            </Pressable>
-          </View>
-        </>
-      ) : (
-        <>
-          {report.isPir && <Text style={styles.pirBadge}>PIR</Text>}
-          <Text style={styles.title}>{report.title || '(sin título)'}</Text>
-          {report.observations ? <Text style={styles.observations}>{report.observations}</Text> : null}
-          <Text style={styles.meta}>
-            Severidad {SEVERITY_LABELS[report.severity]} · Planta {report.plantOrigin}
-            {report.hours != null ? ` · ${report.hours} h` : ''}
-            {report.observationType ? ` · ${report.observationType}` : ''}
-          </Text>
-          {(report.isRepetitive || report.reportedByPlant) && (
+        {isEditing ? (
+          <>
+            <ObservationFields
+              title={title}
+              onTitleChange={setTitle}
+              severity={severity}
+              onSeverityChange={setSeverity}
+              isPir={report.isPir}
+              onTogglePir={handleTogglePir}
+              isRepetitive={report.isRepetitive}
+              onToggleRepetitive={handleToggleRepetitive}
+              reportedByPlant={report.reportedByPlant}
+              onToggleReportedByPlant={handleToggleReportedByPlant}
+              plantOrigin={plantOrigin}
+              onPlantOriginChange={setPlantOrigin}
+              observationType={report.observationType}
+              onObservationTypeChange={handleObservationTypeChange}
+              inspectionType={inspectionType}
+              productScope={report.productScope}
+              onProductScopeChange={handleProductScopeChange}
+              hoursText={hoursText}
+              onHoursChange={setHoursText}
+              observations={observations}
+              onObservationsChange={setObservations}
+              onFieldFocus={scrollToEnd}
+            />
+            <View style={styles.actionRow}>
+              <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(false)}>
+                <Text style={styles.secondaryButtonText}>Cancelar</Text>
+              </Pressable>
+              <Pressable style={styles.primaryButton} onPress={handleSaveEdit}>
+                <Text style={styles.primaryButtonText}>Guardar</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : (
+          <>
+            {report.isPir && <Text style={styles.pirBadge}>PIR</Text>}
+            <Text style={styles.title}>{report.title || '(sin título)'}</Text>
+            {report.observations ? <Text style={styles.observations}>{report.observations}</Text> : null}
             <Text style={styles.meta}>
-              {[
-                report.isRepetitive ? 'Repetitivo' : null,
-                report.reportedByPlant ? 'Informado por planta' : null,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
+              Severidad {SEVERITY_LABELS[report.severity]} · Planta {report.plantOrigin}
+              {report.hours != null ? ` · ${report.hours} h` : ''}
+              {report.observationType ? ` · ${report.observationType}` : ''}
             </Text>
-          )}
-          <Text style={styles.meta}>📅 {new Date(report.createdAt).toLocaleString()}</Text>
-          {report.latitude != null && report.longitude != null && (
-            <Pressable accessibilityRole="link" accessibilityLabel="Abrir ubicación en el mapa" onPress={handleOpenMap}>
-              <Text style={styles.gpsLink}>
-                🛰️ GPS: {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
+            {(report.isRepetitive || report.reportedByPlant) && (
+              <Text style={styles.meta}>
+                {[
+                  report.isRepetitive ? 'Repetitivo' : null,
+                  report.reportedByPlant ? 'Informado por planta' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </Text>
-            </Pressable>
-          )}
-          <View style={styles.actionRow}>
-            <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(true)}>
-              <Text style={styles.secondaryButtonText}>Editar</Text>
-            </Pressable>
-            <Pressable style={styles.dangerButton} onPress={handleDelete}>
-              <Text style={styles.dangerButtonText}>Eliminar</Text>
-            </Pressable>
-          </View>
-        </>
-      )}
+            )}
+            <Text style={styles.meta}>📅 {new Date(report.createdAt).toLocaleString()}</Text>
+            {report.latitude != null && report.longitude != null && (
+              <Pressable accessibilityRole="link" accessibilityLabel="Abrir ubicación en el mapa" onPress={handleOpenMap}>
+                <Text style={styles.gpsLink}>
+                  🛰️ GPS: {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
+                </Text>
+              </Pressable>
+            )}
+            <View style={styles.actionRow}>
+              <Pressable style={styles.secondaryButton} onPress={() => setIsEditing(true)}>
+                <Text style={styles.secondaryButtonText}>Editar</Text>
+              </Pressable>
+              <Pressable style={styles.dangerButton} onPress={handleDelete}>
+                <Text style={styles.dangerButtonText}>Eliminar</Text>
+              </Pressable>
+            </View>
+          </>
+        )}
       </KeyboardAvoidingScreen>
 
-      <PhotoPreviewOverlay photo={previewPhoto} onClose={handleClosePreview} />
+      <PhotoPreviewOverlay photo={previewPhoto} onClose={() => setPreviewPhotoIndex(null)} />
+      <VideoPreviewOverlay uri={previewVideoUri} onClose={() => setPreviewVideoIndex(null)} />
     </View>
   );
 }

@@ -25,6 +25,21 @@ export async function savePhotoToReport(
   return { fileName, localUri: destination.uri };
 }
 
+export async function saveVideoToReport(
+  reportId: string,
+  sourceUri: string
+): Promise<{ fileName: string; localUri: string }> {
+  const directory = reportDirectory(reportId);
+  if (!directory.exists) {
+    directory.create({ intermediates: true });
+  }
+  const fileName = `video_${createId()}.mp4`;
+  const destination = new File(directory, fileName);
+  const sourceFile = new File(sourceUri);
+  await sourceFile.copy(destination);
+  return { fileName, localUri: destination.uri };
+}
+
 export function deletePhotoFile(localUri: string): void {
   const file = new File(localUri);
   if (file.exists) {

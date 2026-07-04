@@ -134,7 +134,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
                   {item.title || '(sin título)'}
                 </Text>
                 <Text style={styles.reportMeta}>
-                  {item.plantOrigin} · {new Date(item.createdAt).toLocaleString()} · {item.photoCount} fotos
+                  {item.plantOrigin} · {new Date(item.createdAt).toLocaleString()} · {item.photoCount + item.videoCount} archivos
                   {item.isPir ? ' · PIR' : ''}
                 </Text>
               </View>

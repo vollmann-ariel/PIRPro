@@ -3,9 +3,9 @@ import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { buildInspectionXlsx } from './xlsx-export';
-import { listPhotosByReport } from '../db/reports-repository';
+import { listPhotosByReport, listVideosByReport } from '../db/reports-repository';
 import type { Inspection } from '../types/inspection';
-import type { Report, ReportPhoto } from '../types/report';
+import type { Report, ReportPhoto, ReportVideo } from '../types/report';
 
 function reportFolderName(index: number, title: string): string {
   const num = String(index + 1).padStart(2, '0');
@@ -15,8 +15,10 @@ function reportFolderName(index: number, title: string): string {
 
 export async function exportInspectionLocally(inspection: Inspection, reports: Report[]): Promise<void> {
   const photosByReportId = new Map<string, ReportPhoto[]>();
+  const videosByReportId = new Map<string, ReportVideo[]>();
   for (const report of reports) {
     photosByReportId.set(report.id, listPhotosByReport(report.id));
+    videosByReportId.set(report.id, listVideosByReport(report.id));
   }
 
   const reportFolders = new Map<string, string>();
@@ -24,7 +26,7 @@ export async function exportInspectionLocally(inspection: Inspection, reports: R
     reportFolders.set(report.id, reportFolderName(index, report.title));
   });
 
-  const xlsxBytes = buildInspectionXlsx(inspection, reports, photosByReportId, reportFolders);
+  const xlsxBytes = buildInspectionXlsx(inspection, reports, photosByReportId, videosByReportId, reportFolders);
   const zipEntries: Record<string, Uint8Array> = {
     'reporte.xlsx': xlsxBytes,
   };
@@ -35,6 +37,16 @@ export async function exportInspectionLocally(inspection: Inspection, reports: R
       const file = new File(photo.localUri);
       if (file.exists) {
         zipEntries[`${folderName}/foto_${photoIndex + 1}.jpg`] = file.bytesSync();
+      }
+    });
+  }
+
+  for (const [reportId, videos] of videosByReportId) {
+    const folderName = reportFolders.get(reportId) ?? reportId;
+    videos.forEach((video, videoIndex) => {
+      const file = new File(video.localUri);
+      if (file.exists) {
+        zipEntries[`${folderName}/video_${videoIndex + 1}.mp4`] = file.bytesSync();
       }
     });
   }

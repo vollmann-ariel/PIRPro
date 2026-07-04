@@ -4,17 +4,18 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { InAppCamera } from '../components/InAppCamera';
 import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingScreen';
+import { MediaCaptureGrid } from '../components/MediaCaptureGrid';
 import { ObservationFields } from '../components/ObservationFields';
-import { PhotoCaptureGrid } from '../components/PhotoCaptureGrid';
+import { VideoPreviewOverlay } from '../components/VideoPreviewOverlay';
 import { getInspectionById } from '../db/inspections-repository';
-import { addPhotoToReport, createReport } from '../db/reports-repository';
+import { addPhotoToReport, addVideoToReport, createReport } from '../db/reports-repository';
 import { captureGpsNonBlocking, type Coordinates } from '../location/gps-capture';
 import { loadSettings } from '../settings/settings-store';
-import { savePhotoToReport } from '../storage/photo-storage';
+import { savePhotoToReport, saveVideoToReport } from '../storage/photo-storage';
 import { colors, radius, spacing, typography } from '../theme/tokens';
 import { hasRequiredObservationFields, type ObservationType, type ProductScope, type Severity } from '../types/report';
 import { parseHours } from '../utils/hours';
-import { pickPhotoUris, promptPhotoSource } from '../utils/photo-picker';
+import { pickPhotoUris, pickVideoUri, promptPhotoSource, promptVideoSource } from '../utils/photo-picker';
 import type { RootStackParamList } from '../navigation/AppNavigator';
 
 const MIN_PHOTOS = 3;
@@ -35,9 +36,11 @@ export function NewProblemScreen({ route, navigation }: Props) {
   const [observationType, setObservationType] = useState<ObservationType | null>(null);
   const [productScope, setProductScope] = useState<ProductScope | null>(null);
   const [photos, setPhotos] = useState<{ uri: string }[]>([]);
+  const [videos, setVideos] = useState<{ uri: string }[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [previewVideoIndex, setPreviewVideoIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -65,6 +68,17 @@ export function NewProblemScreen({ route, navigation }: Props) {
 
   function handleRemovePhoto(index: number) {
     setPhotos((current) => current.filter((_, i) => i !== index));
+  }
+
+  function handleAddVideo() {
+    promptVideoSource(async (source) => {
+      const picked = await pickVideoUri(source);
+      if (picked) setVideos((current) => [...current, picked]);
+    });
+  }
+
+  function handleRemoveVideo(index: number) {
+    setVideos((current) => current.filter((_, i) => i !== index));
   }
 
   async function handleSave() {
@@ -99,6 +113,10 @@ export function NewProblemScreen({ route, navigation }: Props) {
         const { fileName, localUri } = await savePhotoToReport(report.id, photos[index].uri, settings.compressionPreset);
         addPhotoToReport(report.id, fileName, localUri);
       }
+      for (let index = 0; index < videos.length; index += 1) {
+        const { fileName, localUri } = await saveVideoToReport(report.id, videos[index].uri);
+        addVideoToReport(report.id, fileName, localUri);
+      }
       navigation.goBack();
     } finally {
       setIsSaving(false);
@@ -107,12 +125,25 @@ export function NewProblemScreen({ route, navigation }: Props) {
 
   return (
     <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
-      <PhotoCaptureGrid photos={photos.map((p) => ({ uri: p.uri }))} minRequired={MIN_PHOTOS} onAddPress={handleAddPhoto} onRemove={handleRemovePhoto} />
+      <MediaCaptureGrid
+        photos={photos}
+        videos={videos}
+        minPhotos={MIN_PHOTOS}
+        onAddPhotoPress={handleAddPhoto}
+        onAddVideoPress={handleAddVideo}
+        onRemovePhoto={handleRemovePhoto}
+        onRemoveVideo={handleRemoveVideo}
+        onPreviewVideo={setPreviewVideoIndex}
+      />
       <InAppCamera
         visible={isCameraOpen}
         currentCount={photos.length}
         onCapture={handleCapturePhoto}
         onClose={() => setIsCameraOpen(false)}
+      />
+      <VideoPreviewOverlay
+        uri={previewVideoIndex != null ? (videos[previewVideoIndex]?.uri ?? null) : null}
+        onClose={() => setPreviewVideoIndex(null)}
       />
 
       <ObservationFields

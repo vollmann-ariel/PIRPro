@@ -20,6 +20,7 @@
     "expo-splash-screen": "~56.0.10",
     "expo-sqlite": "~56.0.5",
     "expo-status-bar": "~56.0.4",
+    "expo-video": "~56.1.4",
     "fastest-levenshtein": "^1.0.16",
     "fflate": "^0.8.3",
     "react": "19.2.3",

@@ -29,6 +29,7 @@ export function getDatabase(): SQLiteDatabase {
         latitude REAL,
         longitude REAL,
         photo_count INTEGER NOT NULL DEFAULT 0,
+        video_count INTEGER NOT NULL DEFAULT 0,
         sync_status TEXT NOT NULL DEFAULT 'local_only' CHECK (sync_status IN ('local_only','uploaded','needs_reupload')),
         is_pir INTEGER NOT NULL DEFAULT 0,
         is_repetitive INTEGER NOT NULL DEFAULT 0,
@@ -50,8 +51,17 @@ export function getDatabase(): SQLiteDatabase {
         pending_remote_delete INTEGER NOT NULL DEFAULT 0
       );
 
+      CREATE TABLE IF NOT EXISTS report_videos (
+        id TEXT PRIMARY KEY NOT NULL,
+        report_id TEXT NOT NULL REFERENCES reports(id),
+        file_name TEXT NOT NULL,
+        local_uri TEXT NOT NULL,
+        recorded_at TEXT NOT NULL
+      );
+
       CREATE INDEX IF NOT EXISTS idx_reports_inspection_id ON reports(inspection_id);
       CREATE INDEX IF NOT EXISTS idx_report_photos_report_id ON report_photos(report_id);
+      CREATE INDEX IF NOT EXISTS idx_report_videos_report_id ON report_videos(report_id);
     `);
     runMigrations(db);
   }
@@ -90,6 +100,9 @@ function runMigrations(database: SQLiteDatabase): void {
   }
   if (!columnNames.has('product_scope')) {
     database.execSync('ALTER TABLE reports ADD COLUMN product_scope TEXT;');
+  }
+  if (!columnNames.has('video_count')) {
+    database.execSync('ALTER TABLE reports ADD COLUMN video_count INTEGER NOT NULL DEFAULT 0;');
   }
 
   const photoColumns = database.getAllSync<{ name: string }>('PRAGMA table_info(report_photos)');

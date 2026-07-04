@@ -1,8 +1,10 @@
+import { File } from 'expo-file-system';
+
 import { getDatabase } from './database';
 import { touchInspection } from './inspections-repository';
 import { deletePhotoFile, deleteReportDirectory } from '../storage/photo-storage';
 import { createId } from '../utils/ids';
-import type { ObservationType, ProductScope, Report, ReportPhoto, Severity, SyncStatus } from '../types/report';
+import type { ObservationType, ProductScope, Report, ReportPhoto, ReportVideo, Severity, SyncStatus } from '../types/report';
 
 type ReportRow = {
   id: string;
@@ -16,6 +18,7 @@ type ReportRow = {
   latitude: number | null;
   longitude: number | null;
   photo_count: number;
+  video_count: number;
   sync_status: SyncStatus;
   is_pir: number;
   is_repetitive: number;
@@ -50,6 +53,7 @@ function toReport(row: ReportRow): Report {
     latitude: row.latitude,
     longitude: row.longitude,
     photoCount: row.photo_count,
+    videoCount: row.video_count,
     syncStatus: row.sync_status,
     isPir: row.is_pir === 1,
     isRepetitive: row.is_repetitive === 1,
@@ -124,6 +128,7 @@ export function createReport(input: NewReportInput): Report {
     latitude: input.latitude,
     longitude: input.longitude,
     photoCount: 0,
+    videoCount: 0,
     syncStatus: 'local_only',
     isPir: input.isPir ?? false,
     isRepetitive: input.isRepetitive ?? false,
@@ -240,8 +245,50 @@ export function setReportObservationType(id: string, type: ObservationType | nul
   );
 }
 
+export function listVideosByReport(reportId: string): ReportVideo[] {
+  const rows = getDatabase().getAllSync<{ id: string; report_id: string; file_name: string; local_uri: string; recorded_at: string }>(
+    'SELECT * FROM report_videos WHERE report_id = ? ORDER BY recorded_at ASC',
+    reportId
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    reportId: row.report_id,
+    fileName: row.file_name,
+    localUri: row.local_uri,
+    recordedAt: row.recorded_at,
+  }));
+}
+
+export function addVideoToReport(reportId: string, fileName: string, localUri: string): ReportVideo {
+  const video: ReportVideo = {
+    id: createId(),
+    reportId,
+    fileName,
+    localUri,
+    recordedAt: new Date().toISOString(),
+  };
+  getDatabase().runSync(
+    'INSERT INTO report_videos (id, report_id, file_name, local_uri, recorded_at) VALUES (?, ?, ?, ?, ?)',
+    video.id,
+    video.reportId,
+    video.fileName,
+    video.localUri,
+    video.recordedAt
+  );
+  getDatabase().runSync('UPDATE reports SET video_count = video_count + 1 WHERE id = ?', reportId);
+  return video;
+}
+
+export function removeVideoFromReport(video: ReportVideo): void {
+  getDatabase().runSync('DELETE FROM report_videos WHERE id = ?', video.id);
+  const file = new File(video.localUri);
+  if (file.exists) file.delete();
+  getDatabase().runSync('UPDATE reports SET video_count = video_count - 1 WHERE id = ?', video.reportId);
+}
+
 export function deleteReport(id: string): void {
   getDatabase().runSync('DELETE FROM report_photos WHERE report_id = ?', id);
+  getDatabase().runSync('DELETE FROM report_videos WHERE report_id = ?', id);
   getDatabase().runSync('DELETE FROM reports WHERE id = ?', id);
 }
 

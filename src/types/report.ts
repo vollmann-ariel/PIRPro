@@ -17,12 +17,21 @@ export type Report = {
   latitude: number | null;
   longitude: number | null;
   photoCount: number;
+  videoCount: number;
   syncStatus: SyncStatus;
   isPir: boolean;
   isRepetitive: boolean;
   reportedByPlant: boolean;
   observationType: ObservationType | null;
   productScope: ProductScope | null;
+};
+
+export type ReportVideo = {
+  id: string;
+  reportId: string;
+  fileName: string;
+  localUri: string;
+  recordedAt: string;
 };
 
 export type ReportPhoto = {
