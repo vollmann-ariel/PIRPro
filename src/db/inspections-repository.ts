@@ -27,6 +27,13 @@ function toInspection(row: InspectionRow): Inspection {
   };
 }
 
+export function listAllInspections(): Inspection[] {
+  const rows = getDatabase().getAllSync<InspectionRow>(
+    'SELECT * FROM inspections ORDER BY last_activity_at DESC'
+  );
+  return rows.map(toInspection);
+}
+
 export function listInspectionsByTipoPrueba(tipoPrueba: TipoPrueba): Inspection[] {
   const rows = getDatabase().getAllSync<InspectionRow>(
     'SELECT * FROM inspections WHERE tipo_prueba = ? ORDER BY last_activity_at DESC',
