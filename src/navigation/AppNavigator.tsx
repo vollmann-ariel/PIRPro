@@ -15,7 +15,7 @@ export type RootStackParamList = {
   InspectionPicker: undefined;
   ProblemList: { inspectionId: string };
   NewProblem: { inspectionId: string };
-  ProblemDetail: { reportId: string; reportIds: string[] };
+  ProblemDetail: { reportId: string; reportIds: string[]; slideFrom?: 'left' | 'right' | 'none' };
   Export: { inspectionId: string };
   Settings: undefined;
 };
@@ -63,7 +63,14 @@ export function AppNavigator() {
         />
         <Stack.Screen name="ProblemList" component={ProblemListScreen} options={{ title: 'Observaciones' }} />
         <Stack.Screen name="NewProblem" component={NewProblemScreen} options={{ title: 'Nueva observación' }} />
-        <Stack.Screen name="ProblemDetail" component={ProblemDetailScreen} options={{ title: 'Resumen' }} />
+        <Stack.Screen
+          name="ProblemDetail"
+          component={ProblemDetailScreen}
+          options={({ route }) => ({
+            title: 'Resumen',
+            animation: route.params.slideFrom === 'none' ? 'none' : route.params.slideFrom === 'left' ? 'slide_from_left' : 'slide_from_right',
+          })}
+        />
         <Stack.Screen name="Export" component={ExportScreen} options={{ title: 'Exportar' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Ajustes' }} />
       </Stack.Navigator>
