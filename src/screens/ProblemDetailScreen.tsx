@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Alert, Linking, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -41,8 +41,10 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ProblemDetail'>;
 const MIN_PHOTOS = 3;
 const MAX_VIDEOS = 3;
 
+const SWIPE_THRESHOLD = 60;
+
 export function ProblemDetailScreen({ route, navigation }: Props) {
-  const { reportId } = route.params;
+  const { reportId, reportIds } = route.params;
   const [report, setReport] = useState<Report | null>(null);
   const [photos, setPhotos] = useState<ReportPhoto[]>([]);
   const [videos, setVideos] = useState<ReportVideo[]>([]);
@@ -58,6 +60,24 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState<number | null>(null);
   const [previewVideoIndex, setPreviewVideoIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+
+  const swipePan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5,
+        onPanResponderRelease: (_, { dx }) => {
+          if (!reportIds || reportIds.length < 2) return;
+          const currentIndex = reportIds.indexOf(reportId);
+          if (dx > SWIPE_THRESHOLD && currentIndex > 0) {
+            navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex - 1]!, reportIds });
+          } else if (dx < -SWIPE_THRESHOLD && currentIndex < reportIds.length - 1) {
+            navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds });
+          }
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reportId, reportIds]
+  );
 
   function scrollToEnd() {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
@@ -216,7 +236,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const previewVideoUri = previewVideoIndex != null ? (videos[previewVideoIndex]?.localUri ?? null) : null;
 
   return (
-    <View style={styles.flex}>
+    <View style={styles.flex} {...swipePan.panHandlers}>
       <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
         <MediaCaptureGrid
           photos={previewPhotos}

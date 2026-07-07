@@ -41,7 +41,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
 
   function handleRowPress(report: Report) {
     if (!isSelecting) {
-      navigation.navigate('ProblemDetail', { reportId: report.id });
+      navigation.navigate('ProblemDetail', { reportId: report.id, reportIds: reports.map((r) => r.id) });
       return;
     }
     setSelectedIds((prev) => {
