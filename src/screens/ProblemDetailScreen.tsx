@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Linking, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -42,7 +42,6 @@ const MIN_PHOTOS = 3;
 const MAX_VIDEOS = 3;
 
 const SWIPE_THRESHOLD = 60;
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export function ProblemDetailScreen({ route, navigation }: Props) {
   const { reportId, reportIds } = route.params;
@@ -61,37 +60,17 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const [previewPhotoIndex, setPreviewPhotoIndex] = useState<number | null>(null);
   const [previewVideoIndex, setPreviewVideoIndex] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
-  const translateX = useRef(new Animated.Value(0)).current;
 
   const swipePan = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5,
-      onPanResponderMove: (_, { dx }) => {
-        const currentIndex = reportIds?.indexOf(reportId) ?? -1;
-        const atStart = currentIndex <= 0;
-        const atEnd = currentIndex >= (reportIds?.length ?? 0) - 1;
-        if ((dx > 0 && atStart) || (dx < 0 && atEnd)) {
-          translateX.setValue(dx * 0.15);
-        } else {
-          translateX.setValue(dx);
-        }
-      },
       onPanResponderRelease: (_, { dx }) => {
-        if (!reportIds || reportIds.length < 2) {
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-          return;
-        }
+        if (!reportIds || reportIds.length < 2) return;
         const currentIndex = reportIds.indexOf(reportId);
         if (dx > SWIPE_THRESHOLD && currentIndex > 0) {
-          Animated.timing(translateX, { toValue: SCREEN_WIDTH, duration: 180, useNativeDriver: true }).start(() => {
-            navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex - 1]!, reportIds, slideFrom: 'none' });
-          });
+          navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex - 1]!, reportIds, slideFrom: 'left' });
         } else if (dx < -SWIPE_THRESHOLD && currentIndex < reportIds.length - 1) {
-          Animated.timing(translateX, { toValue: -SCREEN_WIDTH, duration: 180, useNativeDriver: true }).start(() => {
-            navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds, slideFrom: 'none' });
-          });
-        } else {
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+          navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds, slideFrom: 'right' });
         }
       },
     })
@@ -254,7 +233,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
   const previewVideoUri = previewVideoIndex != null ? (videos[previewVideoIndex]?.localUri ?? null) : null;
 
   return (
-    <Animated.View style={[styles.flex, { transform: [{ translateX }] }]} {...swipePan.panHandlers}>
+    <View style={styles.flex} {...swipePan.panHandlers}>
       <KeyboardAvoidingScreen ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
         <MediaCaptureGrid
           photos={previewPhotos}
@@ -354,7 +333,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
 
       <PhotoPreviewOverlay photo={previewPhoto} onClose={() => setPreviewPhotoIndex(null)} />
       <VideoPreviewOverlay uri={previewVideoUri} onClose={() => setPreviewVideoIndex(null)} />
-    </Animated.View>
+    </View>
   );
 }
 
