@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Linking, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { StackActions, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { InAppCamera } from '../components/InAppCamera';
@@ -68,9 +68,16 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
         if (!reportIds || reportIds.length < 2) return;
         const currentIndex = reportIds.indexOf(reportId);
         if (dx > SWIPE_THRESHOLD && currentIndex > 0) {
-          navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex - 1]!, reportIds, slideFrom: 'left' });
+          const prevTargetId = reportIds[currentIndex - 1]!;
+          const routes = navigation.getState().routes;
+          const screenBelow = routes[routes.length - 2];
+          if (screenBelow?.name === 'ProblemDetail' && (screenBelow.params as { reportId: string })?.reportId === prevTargetId) {
+            navigation.goBack();
+          } else {
+            navigation.replace('ProblemDetail', { reportId: prevTargetId, reportIds, slideFrom: 'left' });
+          }
         } else if (dx < -SWIPE_THRESHOLD && currentIndex < reportIds.length - 1) {
-          navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds, slideFrom: 'right' });
+          navigation.dispatch(StackActions.push('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds }));
         }
       },
     })
