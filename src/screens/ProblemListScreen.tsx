@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, BackHandler, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { StackActions, useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { getInspectionById } from '../db/inspections-repository';
@@ -41,12 +41,7 @@ export function ProblemListScreen({ route, navigation }: Props) {
 
   function handleRowPress(report: Report) {
     if (!isSelecting) {
-      const reportIds = reports.map((r) => r.id);
-      const index = reports.findIndex((r) => r.id === report.id);
-      if (index > 0) {
-        navigation.dispatch(StackActions.push('ProblemDetail', { reportId: reports[index - 1]!.id, reportIds, slideFrom: 'none' }));
-      }
-      navigation.navigate('ProblemDetail', { reportId: report.id, reportIds });
+      navigation.navigate('ProblemDetail', { reportId: report.id, reportIds: reports.map((r) => r.id) });
       return;
     }
     setSelectedIds((prev) => {
