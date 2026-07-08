@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Linking, PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { StackActions, useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { InAppCamera } from '../components/InAppCamera';
@@ -77,7 +77,7 @@ export function ProblemDetailScreen({ route, navigation }: Props) {
             navigation.replace('ProblemDetail', { reportId: prevTargetId, reportIds, slideFrom: 'left' });
           }
         } else if (dx < -SWIPE_THRESHOLD && currentIndex < reportIds.length - 1) {
-          navigation.dispatch(StackActions.push('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds }));
+          navigation.replace('ProblemDetail', { reportId: reportIds[currentIndex + 1]!, reportIds, slideFrom: 'right' });
         }
       },
     })
