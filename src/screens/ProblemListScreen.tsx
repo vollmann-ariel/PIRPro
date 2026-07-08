@@ -44,7 +44,6 @@ export function ProblemListScreen({ route, navigation }: Props) {
       const reportIds = reports.map((r) => r.id);
       const index = reports.findIndex((r) => r.id === report.id);
       if (index > 0) {
-        // Seed the previous screen silently so goBack() gives the native back animation on right swipe
         navigation.dispatch(StackActions.push('ProblemDetail', { reportId: reports[index - 1]!.id, reportIds, slideFrom: 'none' }));
       }
       navigation.navigate('ProblemDetail', { reportId: report.id, reportIds });

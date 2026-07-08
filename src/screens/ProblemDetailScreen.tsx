@@ -40,7 +40,6 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ProblemDetail'>;
 
 const MIN_PHOTOS = 3;
 const MAX_VIDEOS = 3;
-
 const SWIPE_THRESHOLD = 60;
 
 export function ProblemDetailScreen({ route, navigation }: Props) {

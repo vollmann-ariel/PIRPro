@@ -15,7 +15,7 @@ export type RootStackParamList = {
   InspectionPicker: undefined;
   ProblemList: { inspectionId: string };
   NewProblem: { inspectionId: string };
-  ProblemDetail: { reportId: string; reportIds: string[]; slideFrom?: 'left' | 'right' | 'none' };
+  ProblemDetail: { reportId: string; reportIds: string[]; slideFrom?: 'left' | 'none' };
   Export: { inspectionId: string };
   Settings: undefined;
 };
