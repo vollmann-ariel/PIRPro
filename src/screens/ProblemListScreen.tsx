@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, BackHandler, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { StackActions, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { getInspectionById } from '../db/inspections-repository';
@@ -41,7 +41,13 @@ export function ProblemListScreen({ route, navigation }: Props) {
 
   function handleRowPress(report: Report) {
     if (!isSelecting) {
-      navigation.navigate('ProblemDetail', { reportId: report.id, reportIds: reports.map((r) => r.id) });
+      const reportIds = reports.map((r) => r.id);
+      const index = reports.findIndex((r) => r.id === report.id);
+      if (index > 0) {
+        // Seed the previous screen silently so goBack() gives the native back animation on right swipe
+        navigation.dispatch(StackActions.push('ProblemDetail', { reportId: reports[index - 1]!.id, reportIds, slideFrom: 'none' }));
+      }
+      navigation.navigate('ProblemDetail', { reportId: report.id, reportIds });
       return;
     }
     setSelectedIds((prev) => {
