@@ -68,7 +68,8 @@ export function AppNavigator() {
           component={ProblemDetailScreen}
           options={({ route }) => ({
             title: 'Resumen',
-            animation: route.params.slideFrom === 'none' ? 'none' : route.params.slideFrom === 'left' ? 'slide_from_left' : 'slide_from_right',
+            animation: route.params.slideFrom === 'none' ? 'none' : 'default',
+            animationTypeForReplace: route.params.slideFrom === 'left' ? 'pop' : 'push',
           })}
         />
         <Stack.Screen name="Export" component={ExportScreen} options={{ title: 'Exportar' }} />
